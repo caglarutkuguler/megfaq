@@ -92,8 +92,8 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
 
             $groups[$idProduct]['entries'][] = [
                 'id' => (int) $row['id_megfaq'],
-                'question' => Tools::htmlentitiesUTF8($row['question']),
-                'answer' => nl2br(Tools::htmlentitiesUTF8($row['answer'])),
+                'question' => MegFaq::escape($row['question']),
+                'answer' => nl2br(MegFaq::escape($row['answer'])),
             ];
         }
 

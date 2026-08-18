@@ -28,8 +28,24 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/classes/MegFaqValidator.php';
-require_once dirname(__FILE__) . '/classes/MegFaqEntry.php';
+/*
+ * WidgetInterface lived in the global namespace on PrestaShop 1.7.x
+ * (classes/module/WidgetInterface.php) and moved to
+ * PrestaShop\PrestaShop\Core\Module\WidgetInterface on newer core versions,
+ * with no global-namespace alias shipped. Without this, the class declaration
+ * below fatals on 8.x and 9.x - which the module manager reports as a bare
+ * "Server responded with 500 code" and nothing else.
+ */
+if (!interface_exists('WidgetInterface', false)
+    && interface_exists('PrestaShop\\PrestaShop\\Core\\Module\\WidgetInterface')
+) {
+    class_alias('PrestaShop\\PrestaShop\\Core\\Module\\WidgetInterface', 'WidgetInterface');
+}
+
+require_once __DIR__ . '/classes/MegFaqValidator.php';
+require_once __DIR__ . '/classes/MegFaqEntry.php';
+
+use PrestaShop\PrestaShop\Core\Module\WidgetInterface;
 
 class MegFaq extends Module implements WidgetInterface
 {
@@ -512,15 +528,31 @@ class MegFaq extends Module implements WidgetInterface
             $out[] = [
                 'id' => (int) $row['id_megfaq'],
                 'id_product' => (int) $row['id_product'],
-                'question' => Tools::htmlentitiesUTF8($row['question']),
+                'question' => self::escape($row['question']),
                 // nl2br after escaping: the answer is stored as plain text with
                 // paragraph breaks, and the breaks are the only markup it gets.
-                'answer' => nl2br(Tools::htmlentitiesUTF8($row['answer'])),
+                'answer' => nl2br(self::escape($row['answer'])),
                 'is_global' => (int) $row['id_product'] === 0,
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * Escape once, on the way out.
+     *
+     * Not Tools::htmlentitiesUTF8(): deprecated since PrestaShop 8.0, and it
+     * encodes every character it can rather than the five that matter, which
+     * turns a Turkish or Polish answer into a wall of entities.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public static function escape($value)
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
     }
 
     /**

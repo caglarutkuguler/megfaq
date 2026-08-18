@@ -68,11 +68,25 @@ class MegFaqEntry extends ObjectModel
     /** @var string */
     public $date_upd;
 
+    /**
+     * There is deliberately no 'multishop' => true here, even though megfaq_shop
+     * exists and every front office query joins against it.
+     *
+     * ObjectModel only writes the _shop rows when Shop::isTableAssociated() says
+     * the table is shop-associated, and that answer comes from Shop::$asso_tables
+     * - a hardcoded list of CORE tables. A module table is not in it. Declaring
+     * multishop here would look right, do nothing, and leave every entry without
+     * a _shop row - which the INNER JOIN in published() would then filter out, so
+     * the FAQ would stay empty forever with no error anywhere to explain it. The
+     * association is maintained by hand in add(), update() and delete() below.
+     *
+     * 'multilang' is a different matter and is left on: ObjectModel writes the
+     * _lang rows itself, without consulting any registry.
+     */
     public static $definition = [
         'table' => 'megfaq',
         'primary' => 'id_megfaq',
         'multilang' => true,
-        'multishop' => true,
         'fields' => [
             'id_product' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt'],
             'id_customer' => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt'],
@@ -128,7 +142,7 @@ class MegFaqEntry extends ObjectModel
             return false;
         }
 
-        return true;
+        return $this->saveShopAssociation();
     }
 
     /**
@@ -140,7 +154,72 @@ class MegFaqEntry extends ObjectModel
     {
         $this->date_upd = date('Y-m-d H:i:s');
 
-        return parent::update($nullValues);
+        if (!parent::update($nullValues)) {
+            return false;
+        }
+
+        // Only rewrite the association when the caller actually asked for one.
+        // An ordinary back office edit must not silently re-scope an entry to
+        // whichever shop the employee happens to be looking at.
+        return $this->id_shop_list ? $this->saveShopAssociation() : true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function delete()
+    {
+        $this->clearShopAssociation();
+
+        return parent::delete();
+    }
+
+    /**
+     * Maintain megfaq_shop by hand - see the note on $definition for why
+     * ObjectModel cannot do it for a module table.
+     *
+     * @return bool
+     */
+    private function saveShopAssociation()
+    {
+        // Belt and braces against the id-0 case above: a row here pointing at no
+        // entry is invisible in the back office and impossible to clear from the
+        // interface, so it must never be written in the first place.
+        if (!(int) $this->id) {
+            return false;
+        }
+
+        $shops = $this->id_shop_list;
+        if (!$shops) {
+            $shops = [(int) Context::getContext()->shop->id];
+        }
+
+        $this->clearShopAssociation();
+
+        $values = [];
+        foreach (array_unique(array_map('intval', $shops)) as $idShop) {
+            $values[] = '(' . (int) $this->id . ', ' . (int) $idShop . ')';
+        }
+
+        if (!$values) {
+            return true;
+        }
+
+        return (bool) Db::getInstance()->execute(
+            'INSERT INTO `' . _DB_PREFIX_ . 'megfaq_shop` (`id_megfaq`, `id_shop`)'
+            . ' VALUES ' . implode(', ', $values)
+        );
+    }
+
+    /**
+     * @return void
+     */
+    private function clearShopAssociation()
+    {
+        Db::getInstance()->execute(
+            'DELETE FROM `' . _DB_PREFIX_ . 'megfaq_shop`'
+            . ' WHERE `id_megfaq` = ' . (int) $this->id
+        );
     }
 
     /* --------------------------------------------------------------- front */
