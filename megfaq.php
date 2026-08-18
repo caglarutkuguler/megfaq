@@ -784,6 +784,7 @@ class MegFaq extends Module implements WidgetInterface
             'mf_form_url' => $this->configUrl(),
             'mf_page_url' => $this->frontUrl('faq'),
             'mf_page_urls' => $this->faqPageUrls(),
+            'mf_page_short_url' => $this->faqShortUrl(),
             'mf_products' => $this->productChoices(),
             'mf_cms_pages' => $this->cmsPageChoices(),
             'mf_who_choices' => [
@@ -1085,6 +1086,27 @@ class MegFaq extends Module implements WidgetInterface
         }
 
         return $out;
+    }
+
+    /**
+     * The short, prefix-free address, when the shop has one.
+     *
+     * It is worth printing on the settings screen for the same reason it exists:
+     * a merchant who asked for /faq and then sees nine prefixed URLs listed has
+     * every reason to think nothing happened.
+     *
+     * Empty when friendly URLs are off - there is no short address then, only
+     * index.php?fc=module&..., and offering it as one would be a lie.
+     *
+     * @return string
+     */
+    private function faqShortUrl()
+    {
+        if (!(int) Configuration::get('PS_REWRITING_SETTINGS')) {
+            return '';
+        }
+
+        return $this->context->shop->getBaseURL(true) . 'faq';
     }
 
     /**

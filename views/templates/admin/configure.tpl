@@ -349,6 +349,11 @@
                             <label for="mf_page_off">{l s='No' mod='megfaq'}</label>
                             <a class="slide-button btn"></a>
                         </span>
+                        {if $mf_page_short_url}
+                            <p class="help-block mf-short-url">
+                                {l s='The short address %s works too: it sends each visitor to the page for the language they are browsing in.' sprintf=[$mf_page_short_url] mod='megfaq'}
+                            </p>
+                        {/if}
                         <p class="help-block">
                             {l s='The page exists once per language, at the address that language uses:' mod='megfaq'}
                         </p>
