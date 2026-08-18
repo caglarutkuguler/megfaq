@@ -34,9 +34,26 @@ First release.
   is even about their question. Merchants who prefer the entry hidden until it
   is translated can switch the fallback off.
 
-- **A FAQ page per language.** The page exists once per language, at that
-  language's own address, and the settings screen lists all of them rather than
-  the one belonging to whichever language the employee happens to be working in.
+- **A FAQ page per language, and a short address that leads to it.** The page
+  exists once per language, at that language's own address, and the settings
+  screen lists all of them rather than the one belonging to whichever language
+  the employee happens to be working in.
+
+  `/faq` without a language prefix also resolves, which is convenient and, left
+  alone, quietly damaging: the same content would answer at two addresses, and a
+  crawler arriving at the short one carries no language cookie, so it would only
+  ever see the default language there. So the short address stays usable - type
+  it, share it, print it - and hands the visitor to their own language's page
+  with a 302. One indexable, hreflang-able address per language, nothing
+  duplicated.
+
+- **The product is chosen by name, not by id.** Attaching an entry to a product
+  used to mean leaving the screen, finding the id, coming back and typing it,
+  and a typo produced an entry attached to a product nobody meant. It is a list
+  now, with the shared option named for what it does rather than shown as `0`.
+  A catalogue too large for a list falls back to the id field and says why. An
+  entry whose product has since been deleted keeps that product in the list, so
+  saving does not quietly turn it into a shared answer.
 
 - **Everything server-rendered.** The accordion is a `<details>` element, so the
   text is in the HTML from the first byte, selectable, findable with the

@@ -82,11 +82,36 @@
                         <div class="col-lg-4">
                             <div class="form-group">
                                 <label class="control-label">{l s='Shown on' mod='megfaq'}</label>
-                                <input type="number" min="0" class="form-control" name="mf_id_product"
-                                       value="{if $mf_edit}{$mf_edit.id_product|intval}{else}0{/if}">
-                                <p class="help-block">
-                                    {l s='A product id, or 0 to show this on every product page and in the shop section of the FAQ page.' mod='megfaq'}
-                                </p>
+                                {if $mf_products}
+                                    <select name="mf_id_product" class="form-control">
+                                        <option value="0"{if !$mf_edit || !$mf_edit.id_product} selected{/if}>
+                                            {l s='Every product - a shared answer' mod='megfaq'}
+                                        </option>
+                                        <optgroup label="{l s='One product only' mod='megfaq'}">
+                                            {foreach from=$mf_products item=product}
+                                                <option value="{$product.id|intval}"{if $mf_edit && $mf_edit.id_product == $product.id} selected{/if}>
+                                                    {$product.name|escape:'html':'UTF-8'}{if $product.reference} ({$product.reference|escape:'html':'UTF-8'}){/if}
+                                                </option>
+                                            {/foreach}
+                                            {* An entry whose product has since been deleted keeps its id
+                                               rather than silently becoming a shared answer on save. *}
+                                            {if $mf_edit && $mf_edit.id_product && !$mf_edit.product_found}
+                                                <option value="{$mf_edit.id_product|intval}" selected>
+                                                    {l s='Deleted product (#%d)' sprintf=[$mf_edit.id_product] mod='megfaq'}
+                                                </option>
+                                            {/if}
+                                        </optgroup>
+                                    </select>
+                                    <p class="help-block">
+                                        {l s='A shared answer appears on every product page and in the shop section of the FAQ page.' mod='megfaq'}
+                                    </p>
+                                {else}
+                                    <input type="number" min="0" class="form-control" name="mf_id_product"
+                                           value="{if $mf_edit}{$mf_edit.id_product|intval}{else}0{/if}">
+                                    <p class="help-block">
+                                        {l s='A product id, or 0 for a shared answer shown on every product page. Your catalogue is too large for a product list here, so the id has to be typed.' mod='megfaq'}
+                                    </p>
+                                {/if}
                             </div>
                         </div>
                         <div class="col-lg-4">

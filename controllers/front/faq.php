@@ -40,6 +40,8 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
             Tools::redirect($this->context->link->getPageLink('index', true));
         }
 
+        $this->redirectToCanonical();
+
         $idShop = (int) $this->context->shop->id;
         $idLang = (int) $this->context->language->id;
 
@@ -56,6 +58,47 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
         ]);
 
         $this->setTemplate('module:megfaq/views/templates/front/faq.tpl');
+    }
+
+    /**
+     * Send /faq to the address this language actually owns.
+     *
+     * The short URL works on its own - PrestaShop's dispatcher matches the route
+     * with or without the language prefix and renders in whatever language the
+     * visitor is browsing in. That is convenient and, left alone, quietly
+     * damaging: the same page would answer at /faq and at /en/faq, and a crawler
+     * arriving at /faq carries no language cookie, so it would only ever see the
+     * default language there. Eight of the nine translations would be reachable
+     * only through the prefixed address, while the unprefixed one competed with
+     * one of them for the same content.
+     *
+     * So /faq keeps working as a doorway - type it, share it, print it - and
+     * hands the visitor straight to their own language's page. One address per
+     * language, each indexable, each hreflang-able, and nothing duplicated.
+     *
+     * The comparison is against the canonical link rather than a hardcoded
+     * prefix, so a shop with friendly URLs switched off - where the canonical is
+     * index.php?fc=module&... and carries no prefix at all - matches on the first
+     * request and never redirects.
+     *
+     * @return void
+     */
+    private function redirectToCanonical()
+    {
+        $canonical = $this->context->link->getModuleLink('megfaq', 'faq', [], true);
+
+        $here = parse_url(Tools::getCurrentUrl(), PHP_URL_PATH);
+        $there = parse_url($canonical, PHP_URL_PATH);
+
+        if ($here === null || $there === null || rtrim($here, '/') === rtrim($there, '/')) {
+            return;
+        }
+
+        // Tools::redirect() sends a plain 302. That is the right one here rather
+        // than a 301: a permanent redirect is cached by browsers for months and
+        // cannot be taken back, and this is a shop preference a merchant may
+        // well want to reverse.
+        Tools::redirect($canonical);
     }
 
     /**

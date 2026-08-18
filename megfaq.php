@@ -83,6 +83,13 @@ class MegFaq extends Module implements WidgetInterface
     /** Rows a back office page shows before paging. */
     const PER_PAGE_MAX = 100;
 
+    /**
+     * Above this many products the "shown on" picker becomes an id field
+     * again. A select with every product in a large catalogue is a page that
+     * takes seconds to render and megabytes to send.
+     */
+    const PRODUCT_PICKER_MAX = 800;
+
     /** @var string */
     private $html = '';
 
@@ -777,6 +784,7 @@ class MegFaq extends Module implements WidgetInterface
             'mf_form_url' => $this->configUrl(),
             'mf_page_url' => $this->frontUrl('faq'),
             'mf_page_urls' => $this->faqPageUrls(),
+            'mf_products' => $this->productChoices(),
             'mf_cms_pages' => $this->cmsPageChoices(),
             'mf_who_choices' => [
                 'all' => $this->l('Anyone'),
@@ -1045,9 +1053,14 @@ class MegFaq extends Module implements WidgetInterface
             ];
         }
 
+        $product = (int) $entry->id_product ? new Product((int) $entry->id_product) : null;
+
         return [
             'id' => (int) $entry->id,
             'id_product' => (int) $entry->id_product,
+            // So the picker can offer the deleted product as an option instead
+            // of quietly resetting the entry to a shared answer on the next save.
+            'product_found' => $product ? Validate::isLoadedObject($product) : true,
             'position' => (int) $entry->position,
             'active' => (bool) $entry->active,
             'customer_name' => $entry->customer_name,
@@ -1099,6 +1112,51 @@ class MegFaq extends Module implements WidgetInterface
                     (int) $language['id_lang'],
                     $this->getShopId()
                 ),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The catalogue, for the "shown on" picker.
+     *
+     * Typing a product id was asking the merchant to do the database's job: to
+     * write an entry about one product you had to leave the screen, find the id,
+     * come back and type it, and a typo produced an entry attached to a product
+     * you never meant.
+     *
+     * Capped, because a select carrying twenty thousand products is a page that
+     * never finishes rendering. Above the cap the form falls back to the id
+     * field and says so, which is worse but honest - and no shop that size is
+     * writing FAQ entries one product at a time anyway.
+     *
+     * @return array
+     */
+    private function productChoices()
+    {
+        $rows = Db::getInstance()->executeS(
+            'SELECT pl.`id_product`, pl.`name`, p.`reference`'
+            . ' FROM `' . _DB_PREFIX_ . 'product_lang` pl'
+            . ' INNER JOIN `' . _DB_PREFIX_ . 'product` p ON p.`id_product` = pl.`id_product`'
+            . ' WHERE pl.`id_lang` = ' . $this->getLangId()
+            . ' AND pl.`id_shop` = ' . $this->getShopId()
+            . ' ORDER BY pl.`name` ASC'
+            . ' LIMIT ' . (self::PRODUCT_PICKER_MAX + 1)
+        );
+
+        $rows = is_array($rows) ? $rows : [];
+
+        if (count($rows) > self::PRODUCT_PICKER_MAX) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'id' => (int) $row['id_product'],
+                'name' => (string) $row['name'],
+                'reference' => (string) $row['reference'],
             ];
         }
 
