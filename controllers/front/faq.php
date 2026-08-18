@@ -43,7 +43,11 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
         $idShop = (int) $this->context->shop->id;
         $idLang = (int) $this->context->language->id;
 
-        $entries = MegFaqEntry::getAll($idShop, $idLang);
+        $fallback = (int) $settings['MEGFAQ_FALLBACK']
+            ? (int) Configuration::get('PS_LANG_DEFAULT')
+            : 0;
+
+        $entries = MegFaqEntry::getAll($idShop, $idLang, $fallback);
 
         $this->context->smarty->assign([
             'mf_groups' => $this->group($entries, $idShop, $idLang),

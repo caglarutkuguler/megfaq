@@ -239,7 +239,7 @@ class MegFaqEntry extends ObjectModel
      *
      * @return array
      */
-    public static function getForProduct($idProduct, $idShop, $idLang, $includeGlobal = true)
+    public static function getForProduct($idProduct, $idShop, $idLang, $includeGlobal = true, $fallbackLang = 0)
     {
         $idProduct = (int) $idProduct;
 
@@ -256,7 +256,8 @@ class MegFaqEntry extends ObjectModel
             $idShop,
             $idLang,
             // 0 = the product's own, 1 = the shared ones.
-            'ORDER BY (f.`id_product` = 0), f.`position` ASC, f.`id_megfaq` ASC'
+            'ORDER BY (f.`id_product` = 0), f.`position` ASC, f.`id_megfaq` ASC',
+            $fallbackLang
         );
     }
 
@@ -268,43 +269,83 @@ class MegFaqEntry extends ObjectModel
      *
      * @return array
      */
-    public static function getAll($idShop, $idLang)
+    public static function getAll($idShop, $idLang, $fallbackLang = 0)
     {
         return self::published(
             '1',
             $idShop,
             $idLang,
-            'ORDER BY (f.`id_product` != 0), f.`id_product` ASC, f.`position` ASC, f.`id_megfaq` ASC'
+            'ORDER BY (f.`id_product` != 0), f.`id_product` ASC, f.`position` ASC, f.`id_megfaq` ASC',
+            $fallbackLang
         );
     }
 
     /**
      * The shared clause behind both.
      *
-     * An entry with no answer in this language is not published in this
-     * language, whatever its active flag says. That is the rule that lets a shop
-     * translate at its own pace without ever showing a shopper a question the
-     * page does not answer.
+     * An entry is shown in a language when that language has BOTH a question and
+     * an answer. Half a translation is not a translation: a question in Polish
+     * under an answer in English reads as a mistake, and the shopper cannot tell
+     * whether the answer is even about their question.
+     *
+     * When $fallbackLang is set, an entry with no complete translation falls back
+     * to that language whole - both halves from the same place - instead of
+     * disappearing. That is the difference between a shop that translates over
+     * several months having a useful FAQ page throughout and having an empty one
+     * in seven languages until the last day.
      *
      * @param string $scope
      * @param int    $idShop
      * @param int    $idLang
      * @param string $order
+     * @param int    $fallbackLang 0 to hide untranslated entries instead
      *
      * @return array
      */
-    private static function published($scope, $idShop, $idLang, $order)
+    private static function published($scope, $idShop, $idLang, $order, $fallbackLang = 0)
     {
+        $idLang = (int) $idLang;
+        $fallbackLang = (int) $fallbackLang;
+
+        // Falling back to the language we are already showing is not a fallback.
+        if ($fallbackLang === $idLang) {
+            $fallbackLang = 0;
+        }
+
+        $wanted = "(fl.`question` != '' AND fl.`answer` != '')";
+        $spare = "(fd.`question` != '' AND fd.`answer` != '')";
+
+        $select = $fallbackLang
+            ? ' CASE WHEN ' . $wanted . ' THEN fl.`question` ELSE fd.`question` END AS `question`,'
+                . ' CASE WHEN ' . $wanted . ' THEN fl.`answer` ELSE fd.`answer` END AS `answer`,'
+                // COALESCE because a language with no row at all makes the
+                // comparison NULL rather than false, and a flag that reads
+                // NULL when the answer is most certainly a fallback is worse
+                // than no flag.
+                . ' COALESCE(NOT ' . $wanted . ', 1) AS `is_fallback`'
+            : ' fl.`question`, fl.`answer`, 0 AS `is_fallback`';
+
+        $join = $fallbackLang
+            ? ' LEFT JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
+                . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . $idLang
+                . ' LEFT JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fd'
+                . ' ON fd.`id_megfaq` = f.`id_megfaq` AND fd.`id_lang` = ' . $fallbackLang
+            : ' INNER JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
+                . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . $idLang;
+
+        $have = $fallbackLang
+            ? '(' . $wanted . ' OR ' . $spare . ')'
+            : $wanted;
+
         $rows = Db::getInstance()->executeS(
-            'SELECT f.`id_megfaq`, f.`id_product`, f.`position`, fl.`question`, fl.`answer`'
+            'SELECT f.`id_megfaq`, f.`id_product`, f.`position`,'
+            . $select
             . ' FROM `' . _DB_PREFIX_ . 'megfaq` f'
             . self::shopJoin($idShop)
-            . ' INNER JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
-            . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . (int) $idLang
+            . $join
             . ' WHERE f.`active` = 1'
             . ' AND ' . $scope
-            . " AND fl.`question` != ''"
-            . " AND fl.`answer` != ''"
+            . ' AND ' . $have
             . ' ' . $order
         );
 

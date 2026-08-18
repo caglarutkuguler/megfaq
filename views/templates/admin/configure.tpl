@@ -325,8 +325,16 @@
                             <a class="slide-button btn"></a>
                         </span>
                         <p class="help-block">
-                            <a href="{$mf_page_url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">{$mf_page_url|escape:'html':'UTF-8'}</a>
+                            {l s='The page exists once per language, at the address that language uses:' mod='megfaq'}
                         </p>
+                        <ul class="mf-page-urls">
+                            {foreach from=$mf_page_urls item=page}
+                                <li>
+                                    <span class="mf-page-urls__iso">{$page.iso_code|escape:'html':'UTF-8'}</span>
+                                    <a href="{$page.url|escape:'html':'UTF-8'}" target="_blank" rel="noopener">{$page.url|escape:'html':'UTF-8'}</a>
+                                </li>
+                            {/foreach}
+                        </ul>
                     </div>
 
                     <div class="form-group">
@@ -338,6 +346,20 @@
                             <label for="mf_open_off">{l s='No' mod='megfaq'}</label>
                             <a class="slide-button btn"></a>
                         </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label">{l s='Show untranslated entries in the shop default language' mod='megfaq'}</label>
+                        <span class="switch prestashop-switch fixed-width-lg">
+                            <input type="radio" name="MEGFAQ_FALLBACK" id="mf_fb_on" value="1"{if $mf_settings.MEGFAQ_FALLBACK} checked{/if}>
+                            <label for="mf_fb_on">{l s='Yes' mod='megfaq'}</label>
+                            <input type="radio" name="MEGFAQ_FALLBACK" id="mf_fb_off" value="0"{if !$mf_settings.MEGFAQ_FALLBACK} checked{/if}>
+                            <label for="mf_fb_off">{l s='No' mod='megfaq'}</label>
+                            <a class="slide-button btn"></a>
+                        </span>
+                        <p class="help-block">
+                            {l s='An entry you have not translated yet is shown in your default language instead of being hidden. Question and answer always come from the same language - half a translation is worse than none. Switch this off to hide untranslated entries completely.' mod='megfaq'}
+                        </p>
                     </div>
 
                     <h3 class="mf-h3">{l s='Questions from shoppers' mod='megfaq'}</h3>
@@ -420,12 +442,15 @@
                         </p>
                     </div>
 
-                    <h3 class="mf-h3">{l s='This screen' mod='megfaq'}</h3>
+                    <h3 class="mf-h3">{l s='The Questions list in this back office' mod='megfaq'}</h3>
 
                     <div class="form-group">
-                        <label class="control-label">{l s='Entries per page' mod='megfaq'}</label>
+                        <label class="control-label">{l s='Rows to show before paging' mod='megfaq'}</label>
                         <input type="number" min="5" max="100" class="form-control fixed-width-sm"
                                name="MEGFAQ_PER_PAGE" value="{$mf_settings.MEGFAQ_PER_PAGE|intval}">
+                        <p class="help-block">
+                            {l s='How many entries the Questions tab lists on one page, between 5 and 100. This is a back office setting only - it changes nothing your customers see.' mod='megfaq'}
+                        </p>
                     </div>
 
                     <div class="panel-footer">

@@ -25,9 +25,18 @@ First release.
   answer engine or a customer.
 
 - **Translated at the shop's own pace.** Each entry holds a question and answer
-  per language. A language with no answer simply does not show the entry, so
-  nobody is ever served a question in a language they did not choose, and
-  nothing is machine-translated on the merchant's behalf.
+  per language. Nothing is machine-translated on the merchant's behalf. An entry
+  with no complete translation falls back to the shop's default language rather
+  than disappearing - otherwise a shop that translates over several months has
+  an empty FAQ page in seven languages until the last day. The fallback takes
+  question and answer together, from the same language: a Polish question above
+  an English answer reads as a mistake and leaves the shopper unsure the answer
+  is even about their question. Merchants who prefer the entry hidden until it
+  is translated can switch the fallback off.
+
+- **A FAQ page per language.** The page exists once per language, at that
+  language's own address, and the settings screen lists all of them rather than
+  the one belonging to whichever language the employee happens to be working in.
 
 - **Everything server-rendered.** The accordion is a `<details>` element, so the
   text is in the HTML from the first byte, selectable, findable with the

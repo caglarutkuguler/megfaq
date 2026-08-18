@@ -204,3 +204,21 @@
     font-size: 13px;
     font-weight: 700;
 }
+
+.mf-admin .mf-page-urls {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+}
+
+.mf-admin .mf-page-urls li {
+    margin-bottom: 2px;
+}
+
+.mf-admin .mf-page-urls__iso {
+    display: inline-block;
+    min-width: 26px;
+    font-weight: 700;
+    color: var(--mf-muted);
+}

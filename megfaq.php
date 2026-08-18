@@ -64,6 +64,9 @@ class MegFaq extends Module implements WidgetInterface
         'MEGFAQ_GLOBAL_ON_PRODUCT' => 1,
         'MEGFAQ_PAGE' => 1,
         'MEGFAQ_OPEN_FIRST' => 1,
+        // When an entry has no complete translation, show the shop default
+        // language rather than nothing. See MegFaqEntry::published().
+        'MEGFAQ_FALLBACK' => 1,
         // Questions from shoppers.
         'MEGFAQ_ASK' => 1,
         'MEGFAQ_ASK_WHO' => 'all',
@@ -218,6 +221,24 @@ class MegFaq extends Module implements WidgetInterface
     }
 
     /**
+     * Which language an untranslated entry falls back to, or 0 for none.
+     *
+     * The shop default rather than a hardcoded English: a shop that runs in
+     * French with an English translation should fall back to French, and only
+     * the shop knows which of its languages is the one that is always written.
+     *
+     * @param array $settings
+     *
+     * @return int
+     */
+    private function fallbackLang(array $settings)
+    {
+        return (int) $settings['MEGFAQ_FALLBACK']
+            ? (int) Configuration::get('PS_LANG_DEFAULT')
+            : 0;
+    }
+
+    /**
      * @param string $controller
      * @param array  $params
      *
@@ -292,7 +313,8 @@ class MegFaq extends Module implements WidgetInterface
                 $idProduct,
                 $this->getShopId(),
                 $this->getLangId(),
-                (bool) $settings['MEGFAQ_GLOBAL_ON_PRODUCT']
+                (bool) $settings['MEGFAQ_GLOBAL_ON_PRODUCT'],
+                $this->fallbackLang($settings)
             );
 
             $canAsk = $this->canAsk($settings);
@@ -362,9 +384,14 @@ class MegFaq extends Module implements WidgetInterface
                 $idProduct,
                 $this->getShopId(),
                 $this->getLangId(),
-                (bool) $settings['MEGFAQ_GLOBAL_ON_PRODUCT']
+                (bool) $settings['MEGFAQ_GLOBAL_ON_PRODUCT'],
+                $this->fallbackLang($settings)
             )
-            : MegFaqEntry::getAll($this->getShopId(), $this->getLangId());
+            : MegFaqEntry::getAll(
+                $this->getShopId(),
+                $this->getLangId(),
+                $this->fallbackLang($settings)
+            );
 
         return [
             'mf_entries' => $this->presentEntries($entries),
@@ -749,6 +776,7 @@ class MegFaq extends Module implements WidgetInterface
             'mf_edit' => $this->editing(),
             'mf_form_url' => $this->configUrl(),
             'mf_page_url' => $this->frontUrl('faq'),
+            'mf_page_urls' => $this->faqPageUrls(),
             'mf_cms_pages' => $this->cmsPageChoices(),
             'mf_who_choices' => [
                 'all' => $this->l('Anyone'),
@@ -821,6 +849,7 @@ class MegFaq extends Module implements WidgetInterface
         Configuration::updateValue('MEGFAQ_GLOBAL_ON_PRODUCT', (int) Tools::getValue('MEGFAQ_GLOBAL_ON_PRODUCT'));
         Configuration::updateValue('MEGFAQ_PAGE', (int) Tools::getValue('MEGFAQ_PAGE'));
         Configuration::updateValue('MEGFAQ_OPEN_FIRST', (int) Tools::getValue('MEGFAQ_OPEN_FIRST'));
+        Configuration::updateValue('MEGFAQ_FALLBACK', (int) Tools::getValue('MEGFAQ_FALLBACK'));
         Configuration::updateValue('MEGFAQ_ASK', (int) Tools::getValue('MEGFAQ_ASK'));
         Configuration::updateValue('MEGFAQ_ASK_WHO', $who);
         Configuration::updateValue('MEGFAQ_FLOOD', max(0, (int) Tools::getValue('MEGFAQ_FLOOD')));
@@ -1039,6 +1068,37 @@ class MegFaq extends Module implements WidgetInterface
                 'name' => $language['name'],
                 'iso_code' => Tools::strtoupper($language['iso_code']),
                 'is_default' => (int) $language['id_lang'] === (int) Configuration::get('PS_LANG_DEFAULT'),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The FAQ page as each language actually reaches it.
+     *
+     * The settings screen used to print one URL, which was the URL for whichever
+     * language the employee happened to be working in - and on a nine-language
+     * shop that is the one question the screen was there to answer.
+     *
+     * @return array
+     */
+    private function faqPageUrls()
+    {
+        $out = [];
+
+        foreach (Language::getLanguages(true, $this->getShopId()) as $language) {
+            $out[] = [
+                'iso_code' => Tools::strtoupper($language['iso_code']),
+                'name' => $language['name'],
+                'url' => $this->context->link->getModuleLink(
+                    $this->name,
+                    'faq',
+                    [],
+                    true,
+                    (int) $language['id_lang'],
+                    $this->getShopId()
+                ),
             ];
         }
 
