@@ -1,0 +1,206 @@
+/**
+ * Product FAQ and Customer Questions - back office.
+ *
+ * Every rule that the back office bundle could fight over is scoped under
+ * .mf-admin or an id. PrestaShop loads its own stylesheet after a module's, so a
+ * bare class rule loses a same-specificity tie on load order - which is exactly
+ * how a table quietly ignores its max-width and a highlighted row loses its tint.
+ *
+ * @author    MEG Venture <info@megventure.com>
+ * @copyright 2019-2026 MEG Venture
+ * @license   Academic Free License 3.0 (AFL-3.0)
+ */
+
+.mf-admin {
+    --mf-muted: #6c868c;
+    --mf-warn: #f5a623;
+    --mf-ok: #25a55f;
+    --mf-line: #e3e6ea;
+}
+
+.mf-admin .mf-h3 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 16px;
+}
+
+.mf-admin .mf-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.mf-admin .mf-header__title .mf-h3 {
+    margin: 0;
+    display: inline-block;
+}
+
+.mf-admin .mf-version {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--mf-muted);
+}
+
+.mf-admin .mf-stats {
+    display: flex;
+    gap: 34px;
+    text-align: center;
+}
+
+.mf-admin .mf-stat__value {
+    display: block;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.mf-admin .mf-stat__label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--mf-muted);
+}
+
+.mf-admin .mf-stat--alert .mf-stat__value {
+    color: var(--mf-warn);
+}
+
+.mf-admin .mf-tabs {
+    margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------ the entry form */
+
+.mf-admin .mf-asked-by {
+    margin: 0 0 14px;
+    color: var(--mf-muted);
+}
+
+.mf-admin .mf-lang-tabs {
+    margin: 6px 0 14px;
+}
+
+.mf-admin .mf-lang-tabs > li > a {
+    padding: 5px 12px;
+    font-weight: 600;
+}
+
+.mf-admin .mf-lang-default {
+    font-size: 8px;
+    vertical-align: middle;
+    color: var(--mf-ok);
+}
+
+.mf-admin .mf-lang-pane {
+    display: none;
+}
+
+.mf-admin .mf-lang-pane--active {
+    display: block;
+}
+
+.mf-admin .mf-entry-actions {
+    margin-top: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--mf-line);
+}
+
+/* ---------------------------------------------------------------- the filters */
+
+.mf-admin .mf-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.mf-admin .mf-filter {
+    width: auto;
+    min-width: 160px;
+}
+
+.mf-admin .mf-filter--search {
+    min-width: 260px;
+}
+
+/* ------------------------------------------------------------------ the list */
+
+.mf-admin .mf-list td {
+    vertical-align: middle;
+}
+
+.mf-admin .mf-list__date {
+    white-space: nowrap;
+    color: var(--mf-muted);
+    font-size: 12px;
+}
+
+.mf-admin .mf-list__actions {
+    white-space: nowrap;
+    text-align: right;
+}
+
+.mf-admin .mf-inline {
+    display: inline-block;
+    margin: 0;
+}
+
+.mf-admin .mf-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #eef1f4;
+    color: var(--mf-muted);
+}
+
+.mf-admin .mf-badge--warn {
+    background: #fdf3e2;
+    color: #a5701a;
+}
+
+.mf-admin .mf-badge--shared {
+    background: #eefaf3;
+    color: var(--mf-ok);
+}
+
+.mf-admin .mf-status--on {
+    color: var(--mf-ok);
+    font-weight: 600;
+}
+
+.mf-admin .mf-status--off {
+    color: var(--mf-muted);
+}
+
+.mf-admin .mf-danger:hover {
+    color: #c0392b;
+}
+
+.mf-admin .mf-empty,
+.mf-admin .mf-count {
+    color: var(--mf-muted);
+}
+
+.mf-admin .mf-count {
+    margin: 10px 0 0;
+    font-size: 12px;
+}
+
+.mf-admin .mf-lead {
+    font-size: 14px;
+    color: var(--mf-muted);
+    margin-bottom: 20px;
+}
+
+.mf-admin #mf-tab-help h4 {
+    margin: 18px 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+}

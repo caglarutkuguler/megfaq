@@ -1,0 +1,16 @@
+Sorunuz cevaplandı
+
+Merhaba {name},
+
+Sorunuz:
+
+  {question}
+
+Cevabımız:
+
+  {answer}
+
+Sayfada gör: {product_url}
+
+--
+Ürün SSS ve Müşteri Soruları modülü tarafından gönderildi.

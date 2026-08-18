@@ -1,0 +1,174 @@
+/**
+ * Product FAQ and Customer Questions - front office.
+ *
+ * Built on <details>, so the open/closed behaviour is the browser's and needs no
+ * script. The rules below only restyle the marker and give the block its spacing;
+ * remove every one of them and the FAQ still works.
+ *
+ * @author    MEG Venture <info@megventure.com>
+ * @copyright 2019-2026 MEG Venture
+ * @license   Academic Free License 3.0 (AFL-3.0)
+ */
+
+.megfaq {
+    margin: 2.5rem 0;
+}
+
+.megfaq__heading,
+.megfaq__group-title {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+}
+
+.megfaq__notice {
+    margin: 0 0 1.25rem;
+    padding: .75rem 1rem;
+    border-left: 3px solid #2ecc71;
+    background: #f3fbf6;
+}
+
+.megfaq__list {
+    border-top: 1px solid #ebebeb;
+}
+
+.megfaq__item {
+    border-bottom: 1px solid #ebebeb;
+}
+
+.megfaq__q {
+    position: relative;
+    display: block;
+    padding: .9rem 2rem .9rem 0;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+
+/* The default triangle is replaced rather than hidden with display:none, which
+   in Safari also removes the element's ability to be clicked. */
+.megfaq__q::-webkit-details-marker {
+    display: none;
+}
+
+.megfaq__q::after {
+    content: "+";
+    position: absolute;
+    right: .25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: .55;
+}
+
+.megfaq__item[open] > .megfaq__q::after {
+    content: "\2212";
+}
+
+.megfaq__a {
+    padding: 0 2rem 1.1rem 0;
+    line-height: 1.6;
+}
+
+.megfaq__item--shared > .megfaq__q {
+    opacity: .92;
+}
+
+/* ------------------------------------------------------------- ask a question */
+
+.megfaq__ask {
+    margin-top: 2rem;
+    padding: 1.25rem 1.25rem 1.5rem;
+    background: #fafafa;
+    border: 1px solid #ebebeb;
+}
+
+.megfaq__ask-heading {
+    margin: 0 0 .35rem;
+    font-size: 1.05rem;
+}
+
+.megfaq__ask-lead {
+    margin: 0 0 1rem;
+    opacity: .75;
+}
+
+.megfaq__row {
+    margin-bottom: .85rem;
+}
+
+.megfaq__row label {
+    display: block;
+    margin-bottom: .3rem;
+    font-weight: 600;
+}
+
+.megfaq__row input,
+.megfaq__row textarea {
+    width: 100%;
+    max-width: 32rem;
+    padding: .5rem .65rem;
+    border: 1px solid #d6d6d6;
+    background: #fff;
+}
+
+.megfaq__row textarea {
+    max-width: 44rem;
+    resize: vertical;
+}
+
+.megfaq__row small {
+    display: block;
+    margin-top: .3rem;
+    opacity: .7;
+}
+
+.megfaq__consent {
+    margin: 0 0 1rem;
+}
+
+/* Off-screen rather than hidden: a person never reaches it, a script fills it. */
+.megfaq__hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* ------------------------------------------------------------------ the page */
+
+.megfaq__toc {
+    margin: 0 0 2rem;
+}
+
+.megfaq__toc ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    columns: 2;
+    column-gap: 2rem;
+}
+
+.megfaq__toc li {
+    margin-bottom: .35rem;
+    break-inside: avoid;
+}
+
+.megfaq__toc-count {
+    opacity: .6;
+}
+
+.megfaq__group {
+    margin-bottom: 2.5rem;
+}
+
+.megfaq__all {
+    margin-top: 1.25rem;
+}
+
+@media (max-width: 640px) {
+    .megfaq__toc ul {
+        columns: 1;
+    }
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+  <name>megfaq</name>
+  <displayName><![CDATA[Product FAQ and Customer Questions - Shared Answers, Ask a Question and One FAQ Page]]></displayName>
+  <version><![CDATA[1.0.0]]></version>
+  <description><![CDATA[Answer the questions that stop people buying, on the page where they stop. Write an answer once and show it on every product, or attach it to one product only. Shoppers can ask their own question from the product page; it lands in a moderation queue, and publishing your answer turns it into a FAQ entry. Everything is written into the page the server sends, so shoppers, crawlers and AI answer engines all read the same text.]]></description>
+  <author><![CDATA[MEG Venture]]></author>
+  <tab><![CDATA[front_office_features]]></tab>
+  <is_configurable>1</is_configurable>
+  <need_instance>0</need_instance>
+  <limited_countries></limited_countries>
+</module>

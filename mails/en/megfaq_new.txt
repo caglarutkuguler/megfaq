@@ -1,0 +1,13 @@
+A customer asked a question
+
+{asked_by} asked about {product}:
+
+  {question}
+
+It is waiting in the moderation queue. Nothing is published until you write
+the answer.
+
+Answer it: {answer_url}
+
+--
+Sent by the Product FAQ and Customer Questions module.

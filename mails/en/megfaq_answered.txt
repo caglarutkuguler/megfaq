@@ -1,0 +1,16 @@
+Your question has been answered
+
+Hello {name},
+
+You asked:
+
+  {question}
+
+Our answer:
+
+  {answer}
+
+See it on the page: {product_url}
+
+--
+Sent by the Product FAQ and Customer Questions module.

@@ -1,0 +1,13 @@
+Bir müşteri soru sordu
+
+{asked_by}, {product} hakkında sordu:
+
+  {question}
+
+Soru moderasyon kuyruğunda bekliyor. Siz cevabı yazmadan hiçbir şey
+yayınlanmaz.
+
+Cevapla: {answer_url}
+
+--
+Ürün SSS ve Müşteri Soruları modülü tarafından gönderildi.
