@@ -4,6 +4,29 @@
 
 First release.
 
+### Installing on a database that has been restored
+
+Two of the install steps write a new row to a PrestaShop table rather than to
+one of ours: registering a hook the shop does not have yet, and writing the
+default settings. On a database restored from a backup that lost an
+AUTO_INCREMENT somewhere, those writes fail, and the module manager reports the
+whole install as `PrestaShop could not install this module` with nothing to go
+on.
+
+The install now says which step failed, in the back office log and in the PHP
+error log, and it no longer refuses to install over the two failures that do not
+matter:
+
+- The two GDPR hooks are optional. Without them the module cannot answer an
+  export or erasure request, which is worth a warning and is not worth blocking
+  the install for.
+- A setting that will not save is not fatal either, because `getSettings()`
+  falls back to the same defaults the installer writes. The merchant can save
+  the settings screen later and it will take.
+
+Failing to create the module's own three tables is still fatal, because nothing
+works without them.
+
 ### What it does
 
 - **An answer can belong to one product or to all of them.** This is the whole

@@ -58,6 +58,24 @@ class MegFaq extends Module implements WidgetInterface
         'actionExportGDPRData',
     ];
 
+    /**
+     * Hooks the module is better with and still correct without.
+     *
+     * Both GDPR hooks are created by PrestaShop on demand, which means
+     * registering them writes a row to the hook table. On a shop where that
+     * write fails - a restored database that lost an AUTO_INCREMENT is the case
+     * we have actually met - the old code returned false from install() and the
+     * merchant got "PrestaShop could not install this module" with no clue
+     * which of the twenty steps had failed. A FAQ module that cannot answer an
+     * export request is a smaller problem than a FAQ module that will not
+     * install, so these two are allowed to fail loudly in the log and quietly
+     * on screen.
+     */
+    const OPTIONAL_HOOKS = [
+        'actionDeleteGDPRCustomer',
+        'actionExportGDPRData',
+    ];
+
     const SETTINGS = [
         // Where it shows.
         'MEGFAQ_ON_PRODUCT' => 1,
@@ -114,23 +132,110 @@ class MegFaq extends Module implements WidgetInterface
 
     public function install()
     {
-        if (!parent::install() || !$this->installDb()) {
-            return false;
+        if (!parent::install()) {
+            return $this->installFailed('PrestaShop itself refused the module (parent::install returned false).');
+        }
+
+        if (!$this->installDb()) {
+            return $this->installFailed(
+                'The three megfaq tables could not be created.'
+                . ' Check that the database user is allowed to CREATE TABLE.'
+            );
         }
 
         foreach (self::HOOKS as $hook) {
-            if (!$this->registerHook($hook)) {
-                return false;
+            if ($this->registerHook($hook)) {
+                continue;
             }
+
+            if (in_array($hook, self::OPTIONAL_HOOKS, true)) {
+                $this->installNote(
+                    'The optional hook ' . $hook . ' could not be registered, so this module will not'
+                    . ' answer GDPR export and erasure requests. Everything else works.'
+                    . ' Usually this means the hook table would not accept a new row.'
+                );
+                continue;
+            }
+
+            return $this->installFailed(
+                'The hook ' . $hook . ' could not be registered.'
+                . ' If this hook does not already exist in the shop, PrestaShop has to add a row to the'
+                . ' hook table, and on a restored database that table sometimes no longer accepts one.'
+            );
         }
 
+        // A setting that will not save is not a reason to refuse the install:
+        // getSettings() falls back to the same defaults we are writing here, so
+        // the module works either way and the merchant can save the settings
+        // screen later. It is worth a line in the log, though - a shop that
+        // cannot write configuration has something wrong with it.
         foreach (self::SETTINGS as $key => $value) {
             if (!Configuration::updateValue($key, $value)) {
-                return false;
+                $this->installNote(
+                    'The default for ' . $key . ' could not be written to the configuration table.'
+                    . ' The module falls back to the same value in code, so it still behaves correctly.'
+                );
             }
         }
 
         return true;
+    }
+
+    /**
+     * Say which step failed, in three places, because the module manager shows
+     * none of them reliably: on screen if PrestaShop asks for our errors, in
+     * the back office log, and in the PHP error log, which is the one a hosting
+     * support ticket can actually reach.
+     *
+     * @param string $why
+     *
+     * @return false
+     */
+    private function installFailed($why)
+    {
+        $message = 'megfaq install failed: ' . $why;
+
+        $this->_errors[] = $this->trans(
+            'megfaq could not be installed: %reason%',
+            ['%reason%' => $why],
+            'Modules.Megfaq.Admin'
+        );
+
+        $this->logLine($message, 3);
+
+        return false;
+    }
+
+    /**
+     * @param string $what
+     *
+     * @return void
+     */
+    private function installNote($what)
+    {
+        $this->logLine('megfaq install note: ' . $what, 2);
+    }
+
+    /**
+     * @param string $message
+     * @param int    $severity
+     *
+     * @return void
+     */
+    private function logLine($message, $severity)
+    {
+        // The back office log is a database write, and the whole reason we are
+        // here may be that database writes are failing. error_log() is the one
+        // that still works when the database does not.
+        error_log($message);
+
+        try {
+            if (class_exists('PrestaShopLogger')) {
+                PrestaShopLogger::addLog($message, $severity, null, 'MegFaq', (int) $this->id);
+            }
+        } catch (Exception $e) {
+            // Nothing useful to do here: we are already in the failure path.
+        }
     }
 
     public function uninstall()
