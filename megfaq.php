@@ -848,6 +848,8 @@ class MegFaq extends Module implements WidgetInterface
 
     public function getContent()
     {
+        require_once _PS_MODULE_DIR_ . 'megfaq/classes/MegVentureAdsWidget.php';
+
         $this->postProcess();
 
         $settings = $this->getSettings();
@@ -899,7 +901,9 @@ class MegFaq extends Module implements WidgetInterface
             'mf_html' => $this->html,
         ]);
 
-        return $this->display(__FILE__, 'views/templates/admin/configure.tpl');
+        $mfContent = $this->display(__FILE__, 'views/templates/admin/configure.tpl');
+
+        return $mfContent . MegVentureAdsWidget::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
     }
 
     /**
