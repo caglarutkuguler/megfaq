@@ -6,8 +6,8 @@
  * filters and the settings are plain forms that work without it.
  *
  * @author    MEG Venture <info@megventure.com>
- * @copyright 2019-2026 MEG Venture
- * @license   Academic Free License 3.0 (AFL-3.0)
+ * @copyright 2019-2026 MEG Venture & Consulting Ltd.
+ * @license   https://opensource.org/licenses/MIT MIT License
  */
 
 (function () {

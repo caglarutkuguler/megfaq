@@ -1,8 +1,8 @@
 <?php
 /**
  * @author    MEG Venture <info@megventure.com>
- * @copyright 2007-2026 MEG Venture
- * @license   All rights reserved
+ * @copyright 2007-2026 MEG Venture & Consulting Ltd.
+ * @license   https://opensource.org/licenses/MIT MIT License
  */
 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
