@@ -4,6 +4,8 @@ Answer the questions that stop people buying, on the page where they stop. Write
 
 **Compatibility:** PrestaShop 1.7.0 and above, including PrestaShop 8 and 9. Multilingual and multistore.
 
+**Installable zip:** the archive GitHub generates on the releases page is a source snapshot, not an installable module — PrestaShop rejects it because the folder inside carries the version number. Download the ready-to-install zip from [megventure.com](https://megventure.com/en/free-modules/94-prestashop-product-faq-customer-questions.html).
+
 ## What it does
 
 - **Write an answer once, reuse it everywhere.** An entry with no product attached is shown on *every* product page. "Do you ship to Germany?" and "How long is the licence valid?" are written once, not once per product. An entry attached to a product shows only there. Product-specific entries sort above shared ones.
