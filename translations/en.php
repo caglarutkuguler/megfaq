@@ -266,3 +266,7 @@ $_MODULE['<{megfaq}prestashop>221e705c06e231636fdbccfdd14f4d5c'] = 'Your name';
 $_MODULE['<{megfaq}prestashop>product-faq_221e705c06e231636fdbccfdd14f4d5c'] = 'Your name';
 $_MODULE['<{megfaq}prestashop>352519cba02e5e9ce17b9477a012e87c'] = 'Your question';
 $_MODULE['<{megfaq}prestashop>product-faq_352519cba02e5e9ce17b9477a012e87c'] = 'Your question';
+$_MODULE['<{megfaq}prestashop>megventurereviewnudge_c980491d2b999421c4aa1ef4449323e1'] = 'Happy with this module? A short review helps other merchants find it.';
+$_MODULE['<{megfaq}prestashop>megventurereviewnudge_6ecbf3c5ab7a06f08c526f02bce2b2d6'] = 'Leave a review';
+$_MODULE['<{megfaq}prestashop>megventurereviewnudge_8ad4303b83a62fb6ca3b025bad5bc114'] = 'No thanks';
+$_MODULE['<{megfaq}prestashop>megventurereviewnudge_4d170dcb0d03a0efa011c9193219bb68'] = 'Okay, we will not ask again.';

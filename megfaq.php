@@ -115,7 +115,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $this->name = 'megfaq';
         $this->tab = 'front_office_features';
-        $this->version = '1.0.0';
+        $this->version = '1.1.0';
         $this->author = 'MEG Venture';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -132,6 +132,8 @@ class MegFaq extends Module implements WidgetInterface
 
     public function install()
     {
+        require_once dirname(__FILE__) . '/classes/MegVentureReviewNudge.php';
+
         if (!parent::install()) {
             return $this->installFailed('PrestaShop itself refused the module (parent::install returned false).');
         }
@@ -178,7 +180,7 @@ class MegFaq extends Module implements WidgetInterface
             }
         }
 
-        return true;
+        return MegVentureReviewNudge::onInstall();
     }
 
     /**
@@ -240,6 +242,9 @@ class MegFaq extends Module implements WidgetInterface
 
     public function uninstall()
     {
+        require_once dirname(__FILE__) . '/classes/MegVentureReviewNudge.php';
+        MegVentureReviewNudge::onUninstall();
+
         foreach (array_keys(self::SETTINGS) as $key) {
             Configuration::deleteByName($key);
         }
@@ -849,6 +854,16 @@ class MegFaq extends Module implements WidgetInterface
     public function getContent()
     {
         require_once _PS_MODULE_DIR_ . 'megfaq/classes/MegVentureAdsWidget.php';
+        require_once _PS_MODULE_DIR_ . 'megfaq/classes/MegVentureReviewNudge.php';
+
+        // May redirect (review click) — before anything renders on purpose.
+        // Concatenated configure URL on purpose: getAdminLink()'s $params
+        // argument does not exist on the oldest supported cores.
+        $nudge = MegVentureReviewNudge::handleRequest($this)
+            . MegVentureReviewNudge::render(
+                $this,
+                $this->context->link->getAdminLink('AdminModules', true) . '&configure=' . $this->name
+            );
 
         $this->postProcess();
 
@@ -903,7 +918,7 @@ class MegFaq extends Module implements WidgetInterface
 
         $mfContent = $this->display(__FILE__, 'views/templates/admin/configure.tpl');
 
-        return $mfContent . MegVentureAdsWidget::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
+        return $nudge . $mfContent . MegVentureAdsWidget::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
     }
 
     /**
