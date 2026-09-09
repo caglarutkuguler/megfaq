@@ -115,7 +115,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $this->name = 'megfaq';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.0';
+        $this->version = '1.1.1';
         $this->author = 'MEG Venture';
         $this->need_instance = 0;
         $this->bootstrap = true;

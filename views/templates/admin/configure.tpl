@@ -10,6 +10,22 @@
  * @copyright 2019-2026 MEG Venture & Consulting Ltd.
  * @license   https://opensource.org/licenses/MIT MIT License
  *}
+<style>
+{literal}
+/* Back-office icons. These used to be FontAwesome 4, which the back office shipped up to
+   PrestaShop 8; PrestaShop 9 replaced it with Material Symbols Outlined. An icon-font class
+   selects a private-use code point, so the moment the font is not there the browser has
+   nothing to fall back to and draws an empty box. These now come from the set the core loads
+   for its own interface, which is ligature-based: the icon name is the element's text.
+   Sized down from the 24px default and set back to inheriting the text colour, so they sit
+   where the FontAwesome ones did. */
+.material-icons.mv-ico{font-size:18px;line-height:1;vertical-align:middle;margin-right:4px;}
+.material-icons.mv-ico,.material-icons.mv-ico:hover{color:inherit;}
+h3 .material-icons.mv-ico,
+.panel-heading .material-icons.mv-ico{font-size:20px;}
+.btn .material-icons.mv-ico{font-size:16px;margin-right:3px;}
+{/literal}
+</style>
 <div class="mf-admin" data-mf-admin>
 
     {$mf_html nofilter}
@@ -38,18 +54,18 @@
     <ul class="nav nav-tabs mf-tabs">
         <li{if $mf_tab == 'list'} class="active"{/if}>
             <a href="#mf-tab-list" data-toggle="tab">
-                <i class="icon icon-list"></i> {l s='Questions' mod='megfaq'}
+                <i class="material-icons mv-ico">list</i> {l s='Questions' mod='megfaq'}
                 {if $mf_pending}<span class="badge">{$mf_pending|intval}</span>{/if}
             </a>
         </li>
         <li{if $mf_tab == 'settings'} class="active"{/if}>
             <a href="#mf-tab-settings" data-toggle="tab">
-                <i class="icon icon-cogs"></i> {l s='Settings' mod='megfaq'}
+                <i class="material-icons mv-ico">settings</i> {l s='Settings' mod='megfaq'}
             </a>
         </li>
         <li{if $mf_tab == 'help'} class="active"{/if}>
             <a href="#mf-tab-help" data-toggle="tab">
-                <i class="icon icon-lightbulb-o"></i> {l s='How it works' mod='megfaq'}
+                <i class="material-icons mv-ico">lightbulb</i> {l s='How it works' mod='megfaq'}
             </a>
         </li>
     </ul>
@@ -265,7 +281,7 @@
                                     <td class="mf-list__date">{$row.date_add|escape:'html':'UTF-8'}</td>
                                     <td class="mf-list__actions">
                                         <a class="btn btn-default btn-sm" href="{$row.edit_url|escape:'html':'UTF-8'}">
-                                            <i class="icon icon-pencil"></i> {l s='Edit' mod='megfaq'}
+                                            <i class="material-icons mv-ico">edit</i> {l s='Edit' mod='megfaq'}
                                         </a>
                                         <form method="post" action="{$mf_form_url|escape:'html':'UTF-8'}" class="mf-inline">
                                             <input type="hidden" name="mf_tab" value="list">
@@ -279,7 +295,7 @@
                                             <input type="hidden" name="mf_id" value="{$row.id|intval}">
                                             <button type="submit" name="submitMegFaqDelete" class="btn btn-default btn-sm mf-danger"
                                                     data-mf-confirm="{l s='Delete this entry for good?' mod='megfaq'}">
-                                                <i class="icon icon-trash"></i>
+                                                <i class="material-icons mv-ico">delete</i>
                                             </button>
                                         </form>
                                     </td>
