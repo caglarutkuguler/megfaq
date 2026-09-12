@@ -198,6 +198,33 @@ check(
     !MegFaqValidator::looksLikeSpam('I found you at www.example.com, is this compatible?')
 );
 
+/* ------------------------------------------------------------------- search */
+
+echo 'Search' . PHP_EOL;
+
+check('an empty search matches everything', MegFaqValidator::contains('Any answer at all', '') === true);
+check('a plain word is found', MegFaqValidator::contains('Does it work with PrestaShop 9?', 'prestashop'));
+check('case does not matter', MegFaqValidator::contains('Does it work with PRESTASHOP 9?', 'PrestaShop'));
+check('and neither does it for accented text', MegFaqValidator::contains('Sıkça sorulan sorular', 'SORULAN'));
+check('a word that is not there is not found', !MegFaqValidator::contains('Does it work with PrestaShop 9?', 'magento'));
+check('a phrase is matched as a whole', MegFaqValidator::contains('One licence covers one shop', 'covers one'));
+check('a phrase whose words are apart is not', !MegFaqValidator::contains('One licence covers one shop', 'one covers'));
+check(
+    'the search is cleaned like a question',
+    MegFaqValidator::cleanQuery("  ship\tto   <b>Germany</b>\n") === 'ship to Germany'
+);
+check('a short search is left alone', MegFaqValidator::cleanQuery('ship') === 'ship');
+check(
+    'a long one is cut at the limit',
+    MegFaqValidator::length(MegFaqValidator::cleanQuery(str_repeat('ab ', 100))) <= MegFaqValidator::QUERY_MAX
+        && MegFaqValidator::length(MegFaqValidator::cleanQuery(str_repeat('ab ', 100))) >= MegFaqValidator::QUERY_MAX - 1
+);
+check(
+    'cut by characters, not bytes',
+    MegFaqValidator::length(MegFaqValidator::cleanQuery(str_repeat('ş', 150))) === MegFaqValidator::QUERY_MAX
+);
+check('an empty box is an empty search', MegFaqValidator::cleanQuery(null) === '');
+
 /* ------------------------------------------------------------------------- */
 
 echo PHP_EOL;

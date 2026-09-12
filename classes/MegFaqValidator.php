@@ -174,4 +174,64 @@ class MegFaqValidator
             || (bool) preg_match('/\[url[=\]]/i', $value)
             || (bool) preg_match('/<a\s/i', $value);
     }
+
+    /**
+     * The longest search the FAQ page accepts. Nobody is looking for a hundred
+     * characters; anything longer is a paste, and it is cut rather than refused
+     * because the page still has to answer.
+     */
+    const QUERY_MAX = 100;
+
+    /**
+     * What the visitor typed into the FAQ search, made safe to echo back and
+     * sensible to match: one line, collapsed whitespace, no markup, capped.
+     *
+     * @param string|null $value
+     *
+     * @return string
+     */
+    public static function cleanQuery($value)
+    {
+        $value = self::cleanLine($value);
+
+        if (self::length($value) <= self::QUERY_MAX) {
+            return $value;
+        }
+
+        if (function_exists('mb_substr')) {
+            return trim(mb_substr($value, 0, self::QUERY_MAX, 'UTF-8'));
+        }
+
+        return trim(preg_replace('/^(.{' . self::QUERY_MAX . '}).*$/us', '$1', $value));
+    }
+
+    /**
+     * Does this text contain that, the way the search box means it: anywhere,
+     * whatever the case. An empty search matches everything, which is what
+     * makes the page with no search and the page with one the same code path.
+     *
+     * The script in front.js applies the same rule on the same text, so a page
+     * filtered by the server and a page filtered in the browser agree.
+     *
+     * @param string $haystack
+     * @param string $needle
+     *
+     * @return bool
+     */
+    public static function contains($haystack, $needle)
+    {
+        $needle = (string) $needle;
+
+        if ($needle === '') {
+            return true;
+        }
+
+        $haystack = (string) $haystack;
+
+        if (function_exists('mb_stripos')) {
+            return mb_stripos($haystack, $needle, 0, 'UTF-8') !== false;
+        }
+
+        return stripos($haystack, $needle) !== false;
+    }
 }

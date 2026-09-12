@@ -115,7 +115,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $this->name = 'megfaq';
         $this->tab = 'front_office_features';
-        $this->version = '1.1.1';
+        $this->version = '1.2.0';
         $this->author = 'MEG Venture';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -385,13 +385,13 @@ class MegFaq extends Module implements WidgetInterface
         $this->context->controller->registerStylesheet(
             'megfaq-front',
             'modules/' . $this->name . '/views/css/front.css',
-            ['media' => 'all', 'priority' => 150]
+            ['media' => 'all', 'priority' => 150, 'version' => $this->version]
         );
 
         $this->context->controller->registerJavascript(
             'megfaq-front',
             'modules/' . $this->name . '/views/js/front.js',
-            ['position' => 'bottom', 'priority' => 150]
+            ['position' => 'bottom', 'priority' => 150, 'version' => $this->version]
         );
     }
 

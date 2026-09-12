@@ -5,6 +5,10 @@
  * script. The rules below only restyle the marker and give the block its spacing;
  * remove every one of them and the FAQ still works.
  *
+ * The FAQ page's own rules sit under .megfaq--page and take their colours from
+ * a handful of custom properties declared there, so a theme that wants the page
+ * in its own palette sets those and leaves the rules alone.
+ *
  * @author    MEG Venture <info@megventure.com>
  * @copyright 2019-2026 MEG Venture & Consulting Ltd.
  * @license   https://opensource.org/licenses/MIT MIT License
@@ -14,8 +18,7 @@
     margin: 2.5rem 0;
 }
 
-.megfaq__heading,
-.megfaq__group-title {
+.megfaq__heading {
     margin: 0 0 1rem;
     font-size: 1.25rem;
 }
@@ -136,39 +139,270 @@
     overflow: hidden;
 }
 
-/* ------------------------------------------------------------------ the page */
-
-.megfaq__toc {
-    margin: 0 0 2rem;
-}
-
-.megfaq__toc ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    columns: 2;
-    column-gap: 2rem;
-}
-
-.megfaq__toc li {
-    margin-bottom: .35rem;
-    break-inside: avoid;
-}
-
-.megfaq__toc-count {
-    opacity: .6;
-}
-
-.megfaq__group {
-    margin-bottom: 2.5rem;
-}
-
 .megfaq__all {
     margin-top: 1.25rem;
 }
 
+/* ------------------------------------------------------------------ the page */
+
+.megfaq--page {
+    --megfaq-line: rgba(0, 0, 0, .13);
+    --megfaq-line-soft: rgba(0, 0, 0, .07);
+    --megfaq-muted: rgba(0, 0, 0, .58);
+    --megfaq-soft: rgba(0, 0, 0, .035);
+    --megfaq-badge: rgba(0, 0, 0, .065);
+    --megfaq-accent: var(--bs-primary, #2fb5d2);
+    --megfaq-mark: #fff1a3;
+    --megfaq-surface: #fff;
+    --megfaq-radius: .5rem;
+
+    max-width: 52rem;
+    margin: 0 0 3rem;
+}
+
+/* Both the server (?q=) and the script hide rows with the hidden attribute.
+   Repeated here because a theme's own display rule on details or div would
+   otherwise beat the browser's default for it. */
+.megfaq--page [hidden] {
+    display: none !important;
+}
+
+.megfaq__empty {
+    margin: 0 0 2rem;
+}
+
+/* ------------------------------------------------------------------- search */
+
+.megfaq__search {
+    margin: 0 0 1.25rem;
+}
+
+.megfaq__search-label {
+    display: block;
+    margin: 0 0 .5rem;
+    font-weight: 600;
+}
+
+.megfaq__search-box {
+    position: relative;
+}
+
+.megfaq__search-icon {
+    position: absolute;
+    top: 50%;
+    left: 1rem;
+    width: 1.15rem;
+    height: 1.15rem;
+    transform: translateY(-50%);
+    color: var(--megfaq-muted);
+    pointer-events: none;
+}
+
+.megfaq__search-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: .85rem 3.1rem .85rem 3rem;
+    font: inherit;
+    font-size: 1.05rem;
+    line-height: 1.4;
+    color: inherit;
+    background: var(--megfaq-surface);
+    border: 1px solid var(--megfaq-line);
+    border-radius: var(--megfaq-radius);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.megfaq__search-input:focus {
+    outline: 2px solid var(--megfaq-accent);
+    outline-offset: 1px;
+}
+
+/* The browser's own clear control on a search field: ours sits in the same
+   corner and works in every browser, so the native one only doubles it. */
+.megfaq__search-input::-webkit-search-decoration,
+.megfaq__search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.megfaq__search-clear {
+    position: absolute;
+    top: 50%;
+    right: .55rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--megfaq-muted);
+    cursor: pointer;
+    transform: translateY(-50%);
+}
+
+.megfaq__search-clear:hover,
+.megfaq__search-clear:focus-visible {
+    background: var(--megfaq-soft);
+    color: inherit;
+}
+
+.megfaq__search-clear svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Reserved even when empty, so the list does not jump on the first keystroke. */
+.megfaq__search-status {
+    margin: .6rem 0 0;
+    min-height: 1.4em;
+    font-size: .92rem;
+    color: var(--megfaq-muted);
+}
+
+/* ------------------------------------------------------------------- groups */
+
+.megfaq__groups {
+    overflow: hidden;
+    border: 1px solid var(--megfaq-line);
+    border-radius: var(--megfaq-radius);
+    background: var(--megfaq-surface);
+}
+
+/* The divider is a shadow above each row rather than a border. Whichever row
+   is first - and that changes while searching - has its shadow clipped by the
+   container, so the frame is never doubled at the top. */
+.megfaq__group {
+    box-shadow: 0 -1px 0 0 var(--megfaq-line-soft);
+}
+
+.megfaq__group-title {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    margin: 0;
+    padding: .95rem 1.1rem;
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.35;
+    cursor: pointer;
+    list-style: none;
+}
+
+.megfaq__group-title::-webkit-details-marker {
+    display: none;
+}
+
+.megfaq__group-title::before {
+    content: "";
+    flex: none;
+    width: .5rem;
+    height: .5rem;
+    margin: 0 .15rem 0 .1rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: .55;
+    transform: translateY(0) rotate(-45deg);
+    transition: transform .18s ease;
+}
+
+.megfaq__group[open] > .megfaq__group-title::before {
+    transform: translateY(-2px) rotate(45deg);
+}
+
+.megfaq__group-title:hover,
+.megfaq__group[open] > .megfaq__group-title {
+    background: var(--megfaq-soft);
+}
+
+.megfaq__group-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.megfaq__group-count {
+    flex: none;
+    min-width: 2rem;
+    padding: .15rem .6rem;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+    color: var(--megfaq-muted);
+    background: var(--megfaq-badge);
+}
+
+.megfaq__group-body {
+    padding: .2rem 1.1rem 1.15rem 2.6rem;
+}
+
+/* Same trick as the rows: the line between entries is a shadow above each
+   one, clipped for whichever entry is first. A search hides entries, so the
+   first and last visible ones are not :first-child and :last-child. */
+.megfaq__group-body .megfaq__list {
+    overflow: hidden;
+    border-top: 0;
+}
+
+.megfaq__group-body .megfaq__item {
+    border-bottom: 0;
+    box-shadow: 0 -1px 0 0 #ebebeb;
+}
+
+.megfaq__group-body .megfaq__q {
+    font-weight: 500;
+}
+
+.megfaq__group-link {
+    margin: .9rem 0 0;
+    font-size: .92rem;
+}
+
+.megfaq__group-link a::after {
+    content: " \2192";
+}
+
+/* One group only: nothing to collapse, so just the list in the same frame. */
+.megfaq__list--flat {
+    overflow: hidden;
+    padding: 0 1.1rem;
+    border: 1px solid var(--megfaq-line);
+    border-radius: var(--megfaq-radius);
+    background: var(--megfaq-surface);
+}
+
+.megfaq__list--flat .megfaq__item {
+    border-bottom: 0;
+    box-shadow: 0 -1px 0 0 #ebebeb;
+}
+
+.megfaq__mark {
+    padding: 0 .08em;
+    border-radius: .15em;
+    color: inherit;
+    background: var(--megfaq-mark);
+}
+
 @media (max-width: 640px) {
-    .megfaq__toc ul {
-        columns: 1;
+    .megfaq__group-title {
+        padding: .85rem .9rem;
+    }
+
+    .megfaq__group-body {
+        padding: .1rem .9rem 1rem 1.3rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .megfaq__group-title::before {
+        transition: none;
     }
 }

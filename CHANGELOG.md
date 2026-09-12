@@ -1,5 +1,45 @@
 # Changelog
 
+## 1.2.0
+
+### Added
+
+- **The FAQ page can be searched.** A search box at the top of the page
+  filters the questions as you type. It looks in the question, the answer and
+  the product name, hides everything that does not match, highlights the word
+  in what is left, and says how many results there are. Up to ten results
+  open on their own so the answer is on screen; more than that stay closed
+  and you pick one - or type one more word.
+
+  The search works with no script at all: the box is an ordinary form the
+  server answers from `?q=`, which is also what a shared link to a search
+  loads. A search address carries `noindex`, so it never competes with the
+  page itself in a search engine.
+
+### Changed
+
+- **One row per product instead of one section per product.** The page used
+  to open with a two-column list of every product that had questions, and
+  then print every question under every product in full. On a shop with a
+  few dozen products that was a long page with a long index on top of it,
+  and product names of any length made the index itself hard to scan.
+
+  Now the shared answers come first, expanded, and each product is a single
+  collapsed row showing its name and how many questions it holds. Open the
+  row to read them; the link to the product page sits at the end. A shop
+  with only one group gets the plain list, with nothing to collapse. Deep
+  links to a question (`#megfaq-12`) still work and open the row they point
+  into.
+
+- The page now declares its canonical address. PrestaShop gives module pages
+  none, so until now the FAQ page had none either.
+
+- The front stylesheet and script are registered with the module version as
+  their cache key, so a browser holding the old copies fetches the new ones
+  on its first visit after the upgrade. The upgrade script also drops the
+  theme's combined-asset cache, which is keyed on file paths and would
+  otherwise keep serving the old bundle.
+
 ## 1.1.1
 
 ### Fixed
