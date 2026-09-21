@@ -1,5 +1,7 @@
 # Product FAQ and Customer Questions
 
+**Version:** 1.2.0
+
 Answer the questions that stop people buying, on the page where they stop. Write an answer once and show it on every product, or attach it to a single product. Shoppers can ask their own question from the product page; it lands in a moderation queue, and publishing your answer turns it into a FAQ entry.
 
 **Compatibility:** PrestaShop 1.7.0 and above, including PrestaShop 8 and 9. Multilingual and multistore.
