@@ -313,6 +313,10 @@ check('though the shared group itself still does', $result['vars']['mf_groups'][
 $controller = page()['controller'];
 check('the page names its canonical address', $controller->getCanonicalURL() === 'https://shop.test/en/faq');
 check('and is indexable', $controller->getTemplateVarPage()['meta']['robots'] === 'index');
+$meta = $controller->getTemplateVarPage()['meta'];
+check('the page carries its own title', $meta['title'] === 'Frequently asked questions');
+check('and the same one the heading and the breadcrumb use', $meta['title'] === end($controller->getBreadcrumbLinks()['links'])['title']);
+check('and its own description', strlen($meta['description']) > 40 && strpos($meta['description'], 'questions') !== false);
 $crumbs = $controller->getBreadcrumbLinks();
 check('the breadcrumb ends on the FAQ page', end($crumbs['links'])['url'] === 'https://shop.test/en/faq');
 
@@ -334,6 +338,7 @@ check('its group is a match and opens', $groups[0]['match'] === true && $groups[
 check('a group with no match is neither', $groups[1]['match'] === false && $groups[1]['open'] === false && $groups[1]['matches'] === 0);
 check('the default flags describe the page without the search', $groups[0]['default_open'] === true && $groups[1]['default_open'] === false);
 check('a search page is kept out of the index', $result['controller']->getTemplateVarPage()['meta']['robots'] === 'noindex');
+check('a search keeps the page title rather than putting the query in the tab', $result['controller']->getTemplateVarPage()['meta']['title'] === 'Frequently asked questions');
 check('but its canonical is the plain page', $result['controller']->getCanonicalURL() === 'https://shop.test/en/faq');
 
 $vars = page(['q' => 'DEMO'])['vars'];

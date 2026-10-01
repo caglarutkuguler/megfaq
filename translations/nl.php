@@ -189,6 +189,7 @@ $_MODULE['<{megfaq}prestashop>6299d405a6b2c9f09dfd85abfb007de5'] = 'Zoekopdracht
 $_MODULE['<{megfaq}prestashop>faq_6299d405a6b2c9f09dfd85abfb007de5'] = 'Zoekopdracht wissen';
 $_MODULE['<{megfaq}prestashop>af2a4d2810d86aa0169c117f82682f9a'] = 'Veelgestelde vragen';
 $_MODULE['<{megfaq}prestashop>faq_af2a4d2810d86aa0169c117f82682f9a'] = 'Veelgestelde vragen';
+$_MODULE['<{megfaq}prestashop>faq_e0b81de40fcf19acc8af35dbd4e2e733'] = 'De antwoorden op de vragen die klanten het vaakst stellen, over de winkel en over afzonderlijke producten, op één doorzoekbare pagina.';
 $_MODULE['<{megfaq}prestashop>39d356512c04b00517bd1f9478fca292'] = 'Naar de productpagina';
 $_MODULE['<{megfaq}prestashop>faq_39d356512c04b00517bd1f9478fca292'] = 'Naar de productpagina';
 $_MODULE['<{megfaq}prestashop>5e1f9a52d5b82836e22d6c68a7ada780'] = 'Geen resultaten. Probeer een ander woord, of wis de zoekopdracht om alle vragen te zien.';

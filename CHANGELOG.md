@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.1
+
+### Fixed
+
+- **The FAQ page had no title of its own.** PrestaShop writes the title and
+  the meta description of its own pages out of the Meta table; a module
+  controller is not in that table, so the page inherited whatever the shop
+  uses as its default and went out with the shop name in the tab and in the
+  search snippet - in all eight languages. The one page in the module built to
+  be handed to a search engine or an answer engine was the one page with
+  nothing to say about itself. It now sets its own title and description. The
+  title is the same string the heading and the breadcrumb already use, so the
+  three cannot drift apart, and a search view keeps that title rather than
+  carrying what the visitor typed into the tab (it stays noindex, as before).
+
+### Tests
+
+- `tests/FaqPageTest.php` grew four assertions: the page carries a title, it
+  is the same one the heading and the breadcrumb use, it carries a
+  description, and a search does not change the title. 65 assertions in all.
+
 ## 1.2.0
 
 ### Added

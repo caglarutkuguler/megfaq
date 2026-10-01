@@ -189,6 +189,7 @@ $_MODULE['<{megfaq}prestashop>6299d405a6b2c9f09dfd85abfb007de5'] = 'Aramayı tem
 $_MODULE['<{megfaq}prestashop>faq_6299d405a6b2c9f09dfd85abfb007de5'] = 'Aramayı temizle';
 $_MODULE['<{megfaq}prestashop>af2a4d2810d86aa0169c117f82682f9a'] = 'Sıkça sorulan sorular';
 $_MODULE['<{megfaq}prestashop>faq_af2a4d2810d86aa0169c117f82682f9a'] = 'Sıkça sorulan sorular';
+$_MODULE['<{megfaq}prestashop>faq_e0b81de40fcf19acc8af35dbd4e2e733'] = 'Müşterilerin en çok sorduğu soruların yanıtları: mağaza hakkında ve tek tek ürünler hakkında, arayabileceğiniz tek bir sayfada.';
 $_MODULE['<{megfaq}prestashop>39d356512c04b00517bd1f9478fca292'] = 'Ürün sayfasına git';
 $_MODULE['<{megfaq}prestashop>faq_39d356512c04b00517bd1f9478fca292'] = 'Ürün sayfasına git';
 $_MODULE['<{megfaq}prestashop>5e1f9a52d5b82836e22d6c68a7ada780'] = 'Sonuç yok. Başka bir kelime deneyin ya da tüm soruları görmek için aramayı temizleyin.';

@@ -189,6 +189,7 @@ $_MODULE['<{megfaq}prestashop>6299d405a6b2c9f09dfd85abfb007de5'] = 'Wyczyść wy
 $_MODULE['<{megfaq}prestashop>faq_6299d405a6b2c9f09dfd85abfb007de5'] = 'Wyczyść wyszukiwanie';
 $_MODULE['<{megfaq}prestashop>af2a4d2810d86aa0169c117f82682f9a'] = 'Często zadawane pytania';
 $_MODULE['<{megfaq}prestashop>faq_af2a4d2810d86aa0169c117f82682f9a'] = 'Często zadawane pytania';
+$_MODULE['<{megfaq}prestashop>faq_e0b81de40fcf19acc8af35dbd4e2e733'] = 'Odpowiedzi na pytania, które klienci zadają najczęściej, o sklep i o poszczególne produkty, na jednej stronie z wyszukiwaniem.';
 $_MODULE['<{megfaq}prestashop>39d356512c04b00517bd1f9478fca292'] = 'Przejdź do strony produktu';
 $_MODULE['<{megfaq}prestashop>faq_39d356512c04b00517bd1f9478fca292'] = 'Przejdź do strony produktu';
 $_MODULE['<{megfaq}prestashop>5e1f9a52d5b82836e22d6c68a7ada780'] = 'Brak wyników. Spróbuj innego słowa lub wyczyść wyszukiwanie, aby zobaczyć wszystkie pytania.';

@@ -189,6 +189,7 @@ $_MODULE['<{megfaq}prestashop>6299d405a6b2c9f09dfd85abfb007de5'] = 'Cancella la 
 $_MODULE['<{megfaq}prestashop>faq_6299d405a6b2c9f09dfd85abfb007de5'] = 'Cancella la ricerca';
 $_MODULE['<{megfaq}prestashop>af2a4d2810d86aa0169c117f82682f9a'] = 'Domande frequenti';
 $_MODULE['<{megfaq}prestashop>faq_af2a4d2810d86aa0169c117f82682f9a'] = 'Domande frequenti';
+$_MODULE['<{megfaq}prestashop>faq_e0b81de40fcf19acc8af35dbd4e2e733'] = 'Le risposte alle domande che i clienti fanno più spesso, sul negozio e sui singoli prodotti, in una sola pagina che si può cercare.';
 $_MODULE['<{megfaq}prestashop>39d356512c04b00517bd1f9478fca292'] = 'Vai alla pagina del prodotto';
 $_MODULE['<{megfaq}prestashop>faq_39d356512c04b00517bd1f9478fca292'] = 'Vai alla pagina del prodotto';
 $_MODULE['<{megfaq}prestashop>5e1f9a52d5b82836e22d6c68a7ada780'] = 'Nessun risultato. Prova con un\'altra parola oppure cancella la ricerca per vedere tutte le domande.';

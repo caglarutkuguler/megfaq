@@ -113,6 +113,19 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
     }
 
     /**
+     * The page's own title and description.
+     *
+     * The core writes these for its own pages out of the Meta table; a module
+     * controller is not in that table, so without this the page inherited the
+     * shop's default title and went out as "My shop" - every language, every
+     * search engine, every answer engine. The one page built to be handed to a
+     * crawler had nothing in the tab and nothing in the snippet.
+     *
+     * The title is the same string the heading and the breadcrumb already use,
+     * so the three never drift apart. A search is a view of this page, not a
+     * page of its own: it stays noindex and keeps the same title rather than
+     * carrying what the visitor typed into the tab.
+     *
      * @return array
      */
     public function getTemplateVarPage()
@@ -122,6 +135,12 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
         if ($this->searching) {
             $page['meta']['robots'] = 'noindex';
         }
+
+        $page['meta']['title'] = $this->module->l('Frequently asked questions', 'faq');
+        $page['meta']['description'] = $this->module->l(
+            'Answers to the questions customers ask most, about the shop and about individual products, on one page you can search.',
+            'faq'
+        );
 
         return $page;
     }
