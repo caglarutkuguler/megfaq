@@ -27,6 +27,12 @@ class MegFaqAskQuestionModuleFrontController extends ModuleFrontController
 
     public function postProcess()
     {
+        // Only a real POST is a submission. A GET (bookmark, bot, mistyped link)
+        // must not run validation and must not flash "could not be sent".
+        if (!$this->isPostRequest()) {
+            return;
+        }
+
         $idProduct = (int) Tools::getValue('id_product');
 
         $this->finish($idProduct, $this->handle($idProduct));
@@ -34,8 +40,64 @@ class MegFaqAskQuestionModuleFrontController extends ModuleFrontController
 
     public function initContent()
     {
-        // A GET on this route is not a submission. Send them somewhere real.
+        // A GET on this route is not a submission. Send them somewhere real,
+        // quietly — no mf_sent flash.
         $this->finish((int) Tools::getValue('id_product'), 0);
+    }
+
+    /**
+     * @return bool
+     */
+    private function isPostRequest()
+    {
+        $method = isset($_SERVER['REQUEST_METHOD'])
+            ? strtoupper((string) $_SERVER['REQUEST_METHOD'])
+            : 'GET';
+
+        return $method === 'POST';
+    }
+
+    /**
+     * @return bool
+     */
+    private function isAskTokenValid()
+    {
+        $expected = $this->module->askFormToken();
+        $given = (string) Tools::getValue('token');
+
+        if ($expected === '' || $given === '') {
+            return false;
+        }
+
+        return hash_equals($expected, $given);
+    }
+
+    /**
+     * Whether this shop sells the product the question claims to be about.
+     *
+     * Validate::isLoadedObject() answers "does this row exist", which on a
+     * multistore installation is a question about the whole installation. The
+     * question, its notification mail and the back office row all belong to one
+     * shop, so the product has to belong to that shop too.
+     *
+     * Association, not visibility: a question about a product that is currently
+     * disabled or out of stock is a question the merchant wants, and a shopper
+     * with the product page already open when it is switched off should not have
+     * their question silently refused.
+     *
+     * @param int $idProduct
+     *
+     * @return bool
+     */
+    private function productIsInThisShop($idProduct)
+    {
+        $product = new Product((int) $idProduct);
+
+        if (!Validate::isLoadedObject($product)) {
+            return false;
+        }
+
+        return (bool) $product->isAssociatedToShop((int) $this->context->shop->id);
     }
 
     /**
@@ -51,6 +113,10 @@ class MegFaqAskQuestionModuleFrontController extends ModuleFrontController
             return self::REFUSED;
         }
 
+        if (!$this->isAskTokenValid()) {
+            return self::REFUSED;
+        }
+
         if ($settings['MEGFAQ_ASK_WHO'] === 'customers' && !$this->context->customer->isLogged()) {
             return self::REFUSED;
         }
@@ -63,8 +129,19 @@ class MegFaqAskQuestionModuleFrontController extends ModuleFrontController
             return self::REFUSED;
         }
 
-        $product = new Product($idProduct);
-        if (!Validate::isLoadedObject($product)) {
+        // Consent is required in HTML when a CMS page is configured; enforce the
+        // same rule server-side so a non-browser client cannot skip it.
+        if ((int) $settings['MEGFAQ_CONSENT_CMS'] && !(int) Tools::getValue('mf_consent')) {
+            return self::REFUSED;
+        }
+
+        // The product has to be one this shop sells. Loading the object only
+        // proves the row exists somewhere in the catalogue, and on a multistore
+        // installation that is every shop's catalogue: id_product travels in the
+        // form, so without this check a stranger can post a question about shop
+        // B's product into shop A's queue, and shop A's merchant then gets a
+        // notification naming a product they have never sold.
+        if (!$this->productIsInThisShop($idProduct)) {
             return self::REFUSED;
         }
 
@@ -93,14 +170,24 @@ class MegFaqAskQuestionModuleFrontController extends ModuleFrontController
         $entry->position = MegFaqEntry::nextPosition($idProduct);
         $entry->active = false;
 
-        // The question is stored against the language it was asked in, and only
-        // that one. Copying it into the other seven would leave a Polish shopper
-        // reading a Turkish question the day it is published.
+        // The question is stored against the language it was asked in. When that
+        // is not the shop default language, also seed the default-language row
+        // with the same text so the back office list and publish rules (which
+        // require a default-language question) can see it. Other languages stay
+        // empty so publishing does not show a Polish question to a Turkish
+        // shopper until someone translates it.
+        $idVisitorLang = (int) $this->context->language->id;
+        $idDefaultLang = (int) Configuration::get('PS_LANG_DEFAULT');
+        if (!$idDefaultLang) {
+            $idDefaultLang = $idVisitorLang;
+        }
+
         $entry->question = [];
         $entry->answer = [];
         foreach (Language::getLanguages(false) as $language) {
             $idLang = (int) $language['id_lang'];
-            $entry->question[$idLang] = $idLang === (int) $this->context->language->id ? $question : '';
+            $keepQuestion = ($idLang === $idVisitorLang || $idLang === $idDefaultLang);
+            $entry->question[$idLang] = $keepQuestion ? $question : '';
             $entry->answer[$idLang] = '';
         }
 

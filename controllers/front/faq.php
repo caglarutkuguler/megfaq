@@ -174,7 +174,7 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
     {
         $canonical = $this->getCanonicalURL();
 
-        $here = parse_url(Tools::getCurrentUrl(), PHP_URL_PATH);
+        $here = parse_url($this->currentRequestUrl(), PHP_URL_PATH);
         $there = parse_url($canonical, PHP_URL_PATH);
 
         if ($here === null || $there === null || rtrim($here, '/') === rtrim($there, '/')) {
@@ -190,6 +190,40 @@ class MegFaqFaqModuleFrontController extends ModuleFrontController
         // cannot be taken back, and this is a shop preference a merchant may
         // well want to reverse.
         Tools::redirect($canonical);
+    }
+
+    /**
+     * Absolute URL of the current request.
+     *
+     * Tools::getCurrentUrl() exists only from PrestaShop 8.1. On 1.7 / 8.0 the
+     * FAQ page used to fatal here; fall back to the same pieces the core method
+     * reads so /faq keeps working on the declared compatibility range.
+     *
+     * @return string
+     */
+    private function currentRequestUrl()
+    {
+        if (method_exists('Tools', 'getCurrentUrl')) {
+            return Tools::getCurrentUrl();
+        }
+
+        $https = (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443)
+            || (
+                isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
+                && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https'
+            );
+
+        $host = '';
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $host = (string) $_SERVER['HTTP_HOST'];
+        } elseif (!empty($_SERVER['SERVER_NAME'])) {
+            $host = (string) $_SERVER['SERVER_NAME'];
+        }
+
+        $requestUri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '/';
+
+        return ($https ? 'https' : 'http') . '://' . $host . $requestUri;
     }
 
     /**

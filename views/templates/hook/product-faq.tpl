@@ -30,6 +30,9 @@
                 <details class="megfaq__item{if $entry.is_global} megfaq__item--shared{/if}"
                          id="megfaq-{$entry.id|intval}"
                          {if $mf_open_first && $smarty.foreach.faq.first} open{/if}>
+                    {* Escaped once already, in MegFaq::presentEntries(). See the note on
+                       MegFaq::escape() - escaping again here double-encodes every & and
+                       prints the nl2br <br /> as visible text. *}
                     <summary class="megfaq__q">{$entry.question nofilter}</summary>
                     <div class="megfaq__a">{$entry.answer nofilter}</div>
                 </details>
@@ -52,6 +55,7 @@
 
             <form method="post" action="{$mf_ask_url|escape:'html':'UTF-8'}" class="megfaq__form">
                 <input type="hidden" name="id_product" value="{$mf_id_product|intval}">
+                <input type="hidden" name="token" value="{$mf_ask_token|escape:'html':'UTF-8'}">
 
                 {* Not display:none - some bots skip hidden inputs. Off-screen and
                    out of the tab order is invisible to a person and present to a

@@ -102,6 +102,22 @@ class MegFaq extends Module implements WidgetInterface
     const PER_PAGE_MAX = 100;
 
     /**
+     * Questions per hour, for the whole shop, above which the merchant stops
+     * being told about each one by e-mail.
+     *
+     * MEGFAQ_FLOOD limits one address; it cannot limit a script, because the
+     * address is in the form the script is filling in. The ceiling that cannot
+     * be chosen by the sender has to be counted on something else, and the only
+     * thing the shop owns here is "how many questions arrived".
+     *
+     * Twenty is well above what a shop that sells things produces in an hour and
+     * well below what makes a mailbox unusable. The questions are all still
+     * stored and all still in the moderation queue; only the notification for
+     * each one past the ceiling is skipped, and the next hour starts clean.
+     */
+    const NOTIFY_MAX_PER_HOUR = 20;
+
+    /**
      * Above this many products the "shown on" picker becomes an id field
      * again. A select with every product in a large catalogue is a page that
      * takes seconds to render and megabytes to send.
@@ -115,7 +131,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $this->name = 'megfaq';
         $this->tab = 'front_office_features';
-        $this->version = '1.2.1';
+        $this->version = '1.2.2';
         $this->author = 'MEG Venture';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -382,6 +398,10 @@ class MegFaq extends Module implements WidgetInterface
 
     public function hookActionFrontControllerSetMedia()
     {
+        if (!$this->shouldLoadFrontAssets()) {
+            return;
+        }
+
         $this->context->controller->registerStylesheet(
             'megfaq-front',
             'modules/' . $this->name . '/views/css/front.css',
@@ -393,6 +413,28 @@ class MegFaq extends Module implements WidgetInterface
             'modules/' . $this->name . '/views/js/front.js',
             ['position' => 'bottom', 'priority' => 150, 'version' => $this->version]
         );
+    }
+
+    /**
+     * Front CSS/JS are only needed on product pages (hook + typical widget) and
+     * on this module's own controllers. Loading them on cart/checkout/CMS was
+     * wasted bytes with no FAQ UI.
+     *
+     * @return bool
+     */
+    private function shouldLoadFrontAssets()
+    {
+        $controller = $this->context->controller;
+        $phpSelf = isset($controller->php_self) ? (string) $controller->php_self : '';
+
+        if ($phpSelf === 'product') {
+            return true;
+        }
+
+        $module = (string) Tools::getValue('module');
+        $controllerName = (string) Tools::getValue('controller');
+
+        return $module === $this->name && in_array($controllerName, ['faq', 'askquestion'], true);
     }
 
     public function hookActionAdminControllerSetMedia()
@@ -448,6 +490,7 @@ class MegFaq extends Module implements WidgetInterface
                 'mf_id_product' => $idProduct,
                 'mf_can_ask' => $canAsk,
                 'mf_ask_url' => $this->frontUrl('askquestion'),
+                'mf_ask_token' => $this->askFormToken(),
                 'mf_page_url' => (int) $settings['MEGFAQ_PAGE'] ? $this->frontUrl('faq') : '',
                 'mf_open_first' => (int) $settings['MEGFAQ_OPEN_FIRST'],
                 'mf_consent' => $this->consentText($settings),
@@ -476,7 +519,8 @@ class MegFaq extends Module implements WidgetInterface
     {
         $variables = $this->getWidgetVariables($hookName, $params);
 
-        if (!$variables['mf_entries']) {
+        // Match the product-hook empty rule: ask-only is a real block, not silence.
+        if (!$variables['mf_entries'] && empty($variables['mf_can_ask'])) {
             return '';
         }
 
@@ -515,12 +559,24 @@ class MegFaq extends Module implements WidgetInterface
             'mf_id_product' => $idProduct,
             'mf_can_ask' => $idProduct ? $this->canAsk($settings) : false,
             'mf_ask_url' => $this->frontUrl('askquestion'),
+            'mf_ask_token' => $this->askFormToken(),
             'mf_page_url' => (int) $settings['MEGFAQ_PAGE'] ? $this->frontUrl('faq') : '',
             'mf_open_first' => (int) $settings['MEGFAQ_OPEN_FIRST'],
             'mf_consent' => $this->consentText($settings),
             'mf_prefill' => $this->askPrefill(),
             'mf_notice' => '',
         ];
+    }
+
+    /**
+     * CSRF token for the storefront ask form. Stable across the product page and
+     * the askquestion POST target (page-independent Tools::getToken(false)).
+     *
+     * @return string
+     */
+    public function askFormToken()
+    {
+        return Tools::getToken(false);
     }
 
     /* ----------------------------------------------------------------- GDPR */
@@ -769,6 +825,10 @@ class MegFaq extends Module implements WidgetInterface
             return;
         }
 
+        if (!$this->notificationIsWithinBudget()) {
+            return;
+        }
+
         $product = $entry->id_product ? new Product((int) $entry->id_product, false, $this->getLangId()) : null;
 
         $this->send('megfaq_new', $to, $this->l('A customer asked a question'), [
@@ -780,6 +840,52 @@ class MegFaq extends Module implements WidgetInterface
             '{answer_url}' => $this->context->link->getAdminLink('AdminModules', true)
                 . '&configure=' . $this->name,
         ]);
+    }
+
+    /**
+     * Whether this shop has any notification mail left this hour.
+     *
+     * The ask endpoint is anonymous, and its only rate limit keys on the e-mail
+     * address in the request - which the sender writes. A script that changes
+     * that address on every POST is not rate limited at all, and each accepted
+     * POST used to send one mail, so the endpoint was a way of making the shop
+     * send unbounded mail to the merchant from outside: an unusable inbox, and
+     * the shop's own sending reputation and hosting mail quota spent on it.
+     *
+     * The count is taken from rows this module has already written, so nothing
+     * new is stored and no new personal data (an IP address, which is what a
+     * per-sender limit would need) is collected. It is the shop's own volume,
+     * which means a shop genuinely receiving more than the ceiling loses the
+     * notifications for the rest of that hour - a bounded, self-clearing loss of
+     * a convenience, against an unbounded loss of the mailbox.
+     *
+     * The question itself is never refused here. It is stored, it is in the
+     * moderation queue, and the Questions tab shows its own pending count
+     * whether or not the mail went.
+     *
+     * @return bool
+     */
+    private function notificationIsWithinBudget()
+    {
+        $sent = MegFaqEntry::countRecentFromShoppers($this->getShopId(), 60);
+
+        if ($sent <= self::NOTIFY_MAX_PER_HOUR) {
+            return true;
+        }
+
+        // One line, at the moment the ceiling is crossed rather than on every
+        // question after it, so a flood does not simply move from the mailbox
+        // into the log.
+        if ($sent === self::NOTIFY_MAX_PER_HOUR + 1) {
+            $this->logLine(
+                'megfaq: more than ' . self::NOTIFY_MAX_PER_HOUR . ' questions arrived in one hour on shop '
+                . $this->getShopId() . '. Notification mail is paused for the rest of the hour;'
+                . ' the questions are all in the moderation queue.',
+                2
+            );
+        }
+
+        return false;
     }
 
     /**
@@ -869,6 +975,7 @@ class MegFaq extends Module implements WidgetInterface
 
         $settings = $this->getSettings();
         $idLang = $this->getLangId();
+        $idShop = $this->getShopId();
 
         $tab = Tools::getValue('mf_tab', 'list');
         if (!in_array($tab, ['list', 'settings', 'help'], true)) {
@@ -882,11 +989,11 @@ class MegFaq extends Module implements WidgetInterface
         ];
 
         $perPage = min(self::PER_PAGE_MAX, max(5, (int) $settings['MEGFAQ_PER_PAGE']));
-        $total = MegFaqEntry::countSearch($filters, $idLang);
+        $total = MegFaqEntry::countSearch($filters, $idLang, $idShop);
         $pages = max(1, (int) ceil($total / $perPage));
         $page = min($pages, max(1, (int) Tools::getValue('mf_page', 1)));
 
-        $rows = MegFaqEntry::search($filters, $idLang, $perPage, ($page - 1) * $perPage);
+        $rows = MegFaqEntry::search($filters, $idLang, $perPage, ($page - 1) * $perPage, $idShop);
 
         $this->smarty->assign([
             'mf_tab' => $tab,
@@ -898,9 +1005,9 @@ class MegFaq extends Module implements WidgetInterface
             'mf_total' => $total,
             'mf_page' => $page,
             'mf_pages' => $pages,
-            'mf_pending' => MegFaqEntry::countPending($idLang),
-            'mf_published' => MegFaqEntry::countSearch(['status' => 'published'], $idLang),
-            'mf_globals' => MegFaqEntry::countSearch(['scope' => 'global'], $idLang),
+            'mf_pending' => MegFaqEntry::countPending($idLang, $idShop),
+            'mf_published' => MegFaqEntry::countSearch(['status' => 'published'], $idLang, $idShop),
+            'mf_globals' => MegFaqEntry::countSearch(['scope' => 'global'], $idLang, $idShop),
             'mf_languages' => $this->languageChoices(),
             'mf_edit' => $this->editing(),
             'mf_form_url' => $this->configUrl(),
@@ -944,6 +1051,25 @@ class MegFaq extends Module implements WidgetInterface
      */
     private function postProcess()
     {
+        $isPost = isset($_SERVER['REQUEST_METHOD'])
+            && strtoupper((string) $_SERVER['REQUEST_METHOD']) === 'POST';
+        $submitted = Tools::isSubmit('submitMegFaqSettings')
+            || Tools::isSubmit('submitMegFaqEntry')
+            || Tools::isSubmit('submitMegFaqDelete')
+            || Tools::isSubmit('submitMegFaqToggle');
+
+        if (!$isPost || !$submitted) {
+            return;
+        }
+
+        if ($this->employeeWriteIsDenied()) {
+            $this->html .= $this->displayError(
+                $this->l('Your account may open this page but not change anything on it. Ask an administrator for permission to edit modules.')
+            );
+
+            return;
+        }
+
         try {
             if (Tools::isSubmit('submitMegFaqSettings')) {
                 $this->saveSettings();
@@ -958,6 +1084,56 @@ class MegFaq extends Module implements WidgetInterface
             $this->logError($e);
             $this->html .= $this->displayError($this->l('Something went wrong. The details are in the shop logs.'));
         }
+    }
+
+    /**
+     * Whether this employee's profile is explicitly refused edit rights on the
+     * Modules page.
+     *
+     * PrestaShop lets an employee reach a module's configure page on View
+     * permission alone - View is what opens AdminModules - and then asks the
+     * module nothing. So a profile created to let someone read the shop was able
+     * to delete every FAQ entry, publish an unanswered question, and rewrite the
+     * module's settings, because this page's writes are POSTs to AdminModules and
+     * nothing between the browser and saveEntry() had an opinion about it. The
+     * core does check edit rights before installing or uninstalling a module; it
+     * does not check them for what the module then does with a form.
+     *
+     * Deliberately phrased as "is denied" rather than "is allowed", and it fails
+     * open. Profile::getProfileAccess() has changed shape across the versions
+     * this module supports - the access table on 1.7, authorization roles on 8
+     * and 9, and a special case for the super-admin profile in both - and a
+     * permission check that goes wrong in the other direction locks a merchant
+     * out of their own configuration page with no way back in from the
+     * interface. A missing or unrecognisable answer therefore means yes. Only a
+     * profile whose row says edit = 0 is turned away.
+     *
+     * @return bool
+     */
+    private function employeeWriteIsDenied()
+    {
+        $employee = isset($this->context->employee) ? $this->context->employee : null;
+
+        if (!$employee || !(int) $employee->id_profile) {
+            return false;
+        }
+
+        if (defined('_PS_ADMIN_PROFILE_') && (int) $employee->id_profile === (int) _PS_ADMIN_PROFILE_) {
+            return false;
+        }
+
+        if (!class_exists('Profile') || !method_exists('Profile', 'getProfileAccess')) {
+            return false;
+        }
+
+        $idTab = (int) Tab::getIdFromClassName('AdminModules');
+        if (!$idTab) {
+            return false;
+        }
+
+        $access = Profile::getProfileAccess((int) $employee->id_profile, $idTab);
+
+        return is_array($access) && isset($access['edit']) && !$access['edit'];
     }
 
     /**
@@ -1012,6 +1188,10 @@ class MegFaq extends Module implements WidgetInterface
 
         if ($isNew) {
             $entry = new MegFaqEntry();
+        } elseif (!MegFaqEntry::belongsToShop($id, $this->getShopId())) {
+            $this->html .= $this->displayError($this->l('That entry does not belong to this shop.'));
+
+            return;
         }
 
         $idProduct = (int) Tools::getValue('mf_id_product');
@@ -1100,7 +1280,13 @@ class MegFaq extends Module implements WidgetInterface
     {
         $entry = new MegFaqEntry($id);
 
-        if (!Validate::isLoadedObject($entry) || !$entry->delete()) {
+        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->getShopId())) {
+            $this->html .= $this->displayError($this->l('That entry could not be deleted.'));
+
+            return;
+        }
+
+        if (!$entry->delete()) {
             $this->html .= $this->displayError($this->l('That entry could not be deleted.'));
 
             return;
@@ -1118,7 +1304,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $entry = new MegFaqEntry($id);
 
-        if (!Validate::isLoadedObject($entry)) {
+        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->getShopId())) {
             return;
         }
 
@@ -1165,7 +1351,7 @@ class MegFaq extends Module implements WidgetInterface
 
         $entry = new MegFaqEntry($id);
 
-        if (!Validate::isLoadedObject($entry)) {
+        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->getShopId())) {
             return null;
         }
 

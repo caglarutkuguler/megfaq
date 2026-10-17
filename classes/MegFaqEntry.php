@@ -363,6 +363,30 @@ class MegFaqEntry extends ObjectModel
             . ' ON fs.`id_megfaq` = f.`id_megfaq` AND fs.`id_shop` = ' . (int) $idShop;
     }
 
+    /**
+     * Whether this entry is associated with the given shop.
+     *
+     * @param int $idMegfaq
+     * @param int $idShop
+     *
+     * @return bool
+     */
+    public static function belongsToShop($idMegfaq, $idShop)
+    {
+        $idMegfaq = (int) $idMegfaq;
+        $idShop = (int) $idShop;
+
+        if (!$idMegfaq || !$idShop) {
+            return false;
+        }
+
+        return (bool) Db::getInstance()->getValue(
+            'SELECT 1 FROM `' . _DB_PREFIX_ . 'megfaq_shop`'
+            . ' WHERE `id_megfaq` = ' . $idMegfaq
+            . ' AND `id_shop` = ' . $idShop
+        );
+    }
+
     /* --------------------------------------------------------------- admin */
 
     /**
@@ -370,16 +394,15 @@ class MegFaqEntry extends ObjectModel
      * written in the shop's own language yet.
      *
      * @param int $idLang
+     * @param int $idShop
      *
      * @return int
      */
-    public static function countPending($idLang)
+    public static function countPending($idLang, $idShop)
     {
         return (int) Db::getInstance()->getValue(
             'SELECT COUNT(*)'
-            . ' FROM `' . _DB_PREFIX_ . 'megfaq` f'
-            . ' LEFT JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
-            . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . (int) $idLang
+            . self::adminFrom($idLang, $idShop)
             . " WHERE f.`active` = 0 OR fl.`answer` IS NULL OR fl.`answer` = ''"
         );
     }
@@ -391,16 +414,15 @@ class MegFaqEntry extends ObjectModel
      * @param int   $idLang
      * @param int   $limit
      * @param int   $offset
+     * @param int   $idShop
      *
      * @return array
      */
-    public static function search(array $filters, $idLang, $limit, $offset)
+    public static function search(array $filters, $idLang, $limit, $offset, $idShop)
     {
         $rows = Db::getInstance()->executeS(
             'SELECT f.*, fl.`question`, fl.`answer`'
-            . ' FROM `' . _DB_PREFIX_ . 'megfaq` f'
-            . ' LEFT JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
-            . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . (int) $idLang
+            . self::adminFrom($idLang, $idShop)
             . ' WHERE ' . self::filterClause($filters)
             . ' ORDER BY f.`date_add` DESC'
             . ' LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset
@@ -412,18 +434,34 @@ class MegFaqEntry extends ObjectModel
     /**
      * @param array $filters
      * @param int   $idLang
+     * @param int   $idShop
      *
      * @return int
      */
-    public static function countSearch(array $filters, $idLang)
+    public static function countSearch(array $filters, $idLang, $idShop)
     {
         return (int) Db::getInstance()->getValue(
             'SELECT COUNT(*)'
-            . ' FROM `' . _DB_PREFIX_ . 'megfaq` f'
-            . ' LEFT JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
-            . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . (int) $idLang
+            . self::adminFrom($idLang, $idShop)
             . ' WHERE ' . self::filterClause($filters)
         );
+    }
+
+    /**
+     * Shared FROM/JOIN for back-office list queries so the list, its count and
+     * the pending badge can never disagree about shop or language scope.
+     *
+     * @param int $idLang
+     * @param int $idShop
+     *
+     * @return string
+     */
+    private static function adminFrom($idLang, $idShop)
+    {
+        return ' FROM `' . _DB_PREFIX_ . 'megfaq` f'
+            . self::shopJoin($idShop)
+            . ' LEFT JOIN `' . _DB_PREFIX_ . 'megfaq_lang` fl'
+            . ' ON fl.`id_megfaq` = f.`id_megfaq` AND fl.`id_lang` = ' . (int) $idLang;
     }
 
     /**
@@ -529,6 +567,31 @@ class MegFaqEntry extends ObjectModel
             'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'megfaq`'
             . " WHERE `customer_email` = '" . pSQL($email) . "'"
             . ' AND `date_add` > DATE_SUB(NOW(), INTERVAL ' . (int) $minutes . ' MINUTE)'
+        );
+    }
+
+    /**
+     * How many questions arrived from shoppers in this shop since a given time.
+     *
+     * Counts rows that carry an address, which is what a shopper's question has
+     * and an entry the merchant wrote themselves does not - so adding twenty FAQ
+     * entries in an afternoon does not read as a flood.
+     *
+     * Shop-scoped through megfaq_shop, so one shop under attack does not change
+     * what the shop next door sees.
+     *
+     * @param int $idShop
+     * @param int $minutes
+     *
+     * @return int
+     */
+    public static function countRecentFromShoppers($idShop, $minutes)
+    {
+        return (int) Db::getInstance()->getValue(
+            'SELECT COUNT(*) FROM `' . _DB_PREFIX_ . 'megfaq` f'
+            . self::shopJoin($idShop)
+            . " WHERE f.`customer_email` != ''"
+            . ' AND f.`date_add` > DATE_SUB(NOW(), INTERVAL ' . (int) $minutes . ' MINUTE)'
         );
     }
 }
