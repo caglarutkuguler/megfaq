@@ -74,6 +74,7 @@
                     <div class="megfaq__list megfaq__list--flat"{if $mf_matches == 0} hidden{/if}>
                         {foreach from=$group.entries item=entry}
                             <details class="megfaq__item" id="megfaq-{$entry.id|intval}"{if $entry.open} open{/if}{if !$entry.match} hidden{/if}{if $entry.default_open} data-open="1"{/if}>
+                                {* Escaped once already, in MegFaqFaqModuleFrontController::group(). *}
                                 <summary class="megfaq__q">{$entry.question nofilter}</summary>
                                 <div class="megfaq__a">{$entry.answer nofilter}</div>
                             </details>

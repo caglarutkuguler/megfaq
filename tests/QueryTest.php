@@ -332,30 +332,31 @@ assertContains('deleting an entry clears its shop rows', 'DELETE FROM `ps_megfaq
 echo 'Back office filters' . PHP_EOL;
 
 Db::reset();
-MegFaqEntry::search(['status' => 'pending'], 1, 20, 0);
+MegFaqEntry::search(['status' => 'pending'], 1, 20, 0, 1);
 assertContains('pending means unpublished or unanswered', "f.`active` = 0 OR fl.`answer` IS NULL");
+assertContains('the list is scoped to the employee shop', 'ps_megfaq_shop` fs');
 
 Db::reset();
-MegFaqEntry::search(['status' => 'published'], 1, 20, 0);
+MegFaqEntry::search(['status' => 'published'], 1, 20, 0, 1);
 assertContains('published means active and answered', "f.`active` = 1 AND fl.`answer` IS NOT NULL");
 
 Db::reset();
-MegFaqEntry::search(['scope' => 'global'], 1, 20, 0);
+MegFaqEntry::search(['scope' => 'global'], 1, 20, 0, 1);
 assertContains('the shared filter looks for product 0', 'f.`id_product` = 0');
 
 Db::reset();
-MegFaqEntry::search(['search' => "O'Brien"], 1, 20, 0);
+MegFaqEntry::search(['search' => "O'Brien"], 1, 20, 0, 1);
 assertContains('a quote in the search box is escaped', "O\\'Brien");
 
 Db::reset();
-MegFaqEntry::search([], 1, 20, 40);
+MegFaqEntry::search([], 1, 20, 40, 1);
 assertContains('paging is passed through', 'LIMIT 20 OFFSET 40');
 
 Db::reset();
-MegFaqEntry::countSearch(['status' => 'pending'], 1);
+MegFaqEntry::countSearch(['status' => 'pending'], 1, 1);
 $count = Db::last();
 Db::reset();
-MegFaqEntry::search(['status' => 'pending'], 1, 20, 0);
+MegFaqEntry::search(['status' => 'pending'], 1, 20, 0, 1);
 $list = Db::last();
 check(
     'the count and the list agree about what they are looking at',
@@ -370,6 +371,24 @@ Db::reset();
 MegFaqEntry::countRecentByEmail("spam'er@example.com", 60);
 assertContains('and escapes the address it was given', "spam\\'er@example.com");
 assertContains('and counts within the window it was given', 'INTERVAL 60 MINUTE');
+
+Db::reset();
+MegFaqEntry::belongsToShop(12, 3);
+assertContains(
+    'shop membership checks megfaq_shop',
+    'FROM `ps_megfaq_shop` WHERE `id_megfaq` = 12 AND `id_shop` = 3'
+);
+
+// The notification budget is the only limit on the ask endpoint that the sender
+// cannot choose, so all three parts of it are worth pinning: it is scoped to one
+// shop, it counts only questions that came from a shopper, and it counts them
+// inside a window.
+Db::reset();
+MegFaqEntry::countRecentFromShoppers(3, 60);
+assertContains('the notification budget joins megfaq_shop', 'INNER JOIN `ps_megfaq_shop` fs');
+assertContains('and is scoped to the shop it was given', 'fs.`id_shop` = 3');
+assertContains('and counts only rows a shopper left an address on', "f.`customer_email` != ''");
+assertContains('and counts inside the window it was given', 'INTERVAL 60 MINUTE');
 
 /* ------------------------------------------------------------------------- */
 

@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.2.2
+
+### Security
+
+- Configure writes (settings, entry save/delete/toggle) require POST. A GET
+  carrying `submitMegFaq*` no longer mutates FAQ data or settings (CWE-352).
+
+- **The ask form cannot be used to flood the shop's own mail any more.** The
+  limit on questions per hour counts one e-mail address, and the address is a
+  field in the form, so a script that changed it on every send was never limited
+  by it - and every send made the shop e-mail the merchant. The notification is
+  now capped at twenty an hour for the whole shop. Every question is still
+  stored, still unpublished, and still counted by the badge on the Questions tab;
+  only the mail about it stops, and only for the rest of that hour (CWE-770).
+
+- **An employee who may only view the back office can no longer change this
+  module.** PrestaShop opens a module's configure page on View permission alone
+  and then asks the module nothing, so a read-only profile could delete entries,
+  publish an unanswered question, or rewrite the settings. Writes from a profile
+  whose Modules permission says it may not edit are now refused (CWE-862).
+
+- **A question can only be about a product this shop sells.** On a multistore
+  installation the ask form's product id was checked for existence but not for
+  which shop it belonged to, so a question about another shop's product could be
+  posted into this shop's queue - and the merchant's notification then named a
+  product they have never sold (CWE-639).
+
+- **The promo widget on the configure page will not follow a link the feed
+  invents.** Addresses arriving in the feed were escaped for HTML, which makes
+  `javascript:` safe to sit inside an attribute and exactly as dangerous to
+  click. Only absolute `http`/`https` addresses are rendered now (CWE-79).
+
+- `MegVentureAdsWidget` pins the feed host to megventure.com, disables HTTP
+  redirects and restricts cURL protocols (CWE-918).
+
+- The two files that were missing the "refuse a direct request" guard every other
+  PHP file in the module carries have it back.
+
 ## 1.2.1
 
 ### Fixed
