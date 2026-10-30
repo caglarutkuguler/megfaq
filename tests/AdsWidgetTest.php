@@ -45,50 +45,50 @@ echo 'safeUrl - addresses out of the feed' . PHP_EOL;
 
 check(
     'an ordinary https address passes through unchanged',
-    MegVentureAdsWidget::safeUrl('https://megventure.com/en/12-modules') === 'https://megventure.com/en/12-modules'
+    MegVentureAdsWidgetV2::safeUrl('https://megventure.com/en/12-modules') === 'https://megventure.com/en/12-modules'
 );
 check(
     'http is allowed too - some shops still run one',
-    MegVentureAdsWidget::safeUrl('http://megventure.com/x') === 'http://megventure.com/x'
+    MegVentureAdsWidgetV2::safeUrl('http://megventure.com/x') === 'http://megventure.com/x'
 );
 check(
     'a query string and a fragment survive',
-    MegVentureAdsWidget::safeUrl('https://megventure.com/x?a=1&b=2#c') === 'https://megventure.com/x?a=1&b=2#c'
+    MegVentureAdsWidgetV2::safeUrl('https://megventure.com/x?a=1&b=2#c') === 'https://megventure.com/x?a=1&b=2#c'
 );
-check('surrounding whitespace is trimmed', MegVentureAdsWidget::safeUrl("  https://megventure.com/x \n") === 'https://megventure.com/x');
+check('surrounding whitespace is trimmed', MegVentureAdsWidgetV2::safeUrl("  https://megventure.com/x \n") === 'https://megventure.com/x');
 
 // The whole point. htmlspecialchars makes each of these safe to sit inside an
 // attribute and leaves it exactly as dangerous to click.
-check('javascript: is refused', MegVentureAdsWidget::safeUrl('javascript:alert(1)') === '');
-check('JavaScript: is refused whatever the case', MegVentureAdsWidget::safeUrl('JaVaScRiPt:alert(1)') === '');
-check('data: is refused', MegVentureAdsWidget::safeUrl('data:text/html;base64,PHNjcmlwdD4=') === '');
-check('vbscript: is refused', MegVentureAdsWidget::safeUrl('vbscript:msgbox(1)') === '');
-check('file: is refused', MegVentureAdsWidget::safeUrl('file:///etc/passwd') === '');
+check('javascript: is refused', MegVentureAdsWidgetV2::safeUrl('javascript:alert(1)') === '');
+check('JavaScript: is refused whatever the case', MegVentureAdsWidgetV2::safeUrl('JaVaScRiPt:alert(1)') === '');
+check('data: is refused', MegVentureAdsWidgetV2::safeUrl('data:text/html;base64,PHNjcmlwdD4=') === '');
+check('vbscript: is refused', MegVentureAdsWidgetV2::safeUrl('vbscript:msgbox(1)') === '');
+check('file: is refused', MegVentureAdsWidgetV2::safeUrl('file:///etc/passwd') === '');
 
 // A scheme with no host is not an address we can put in a page from a feed on
 // another origin, and a relative one would resolve against the back office.
-check('a relative path is refused', MegVentureAdsWidget::safeUrl('/en/12-modules') === '');
-check('a protocol-relative address is refused', MegVentureAdsWidget::safeUrl('//attacker.test/x') === '');
-check('a bare word is refused', MegVentureAdsWidget::safeUrl('megventure.com') === '');
-check('empty is empty', MegVentureAdsWidget::safeUrl('') === '');
-check('null is empty', MegVentureAdsWidget::safeUrl(null) === '');
-check('whitespace only is empty', MegVentureAdsWidget::safeUrl('   ') === '');
+check('a relative path is refused', MegVentureAdsWidgetV2::safeUrl('/en/12-modules') === '');
+check('a protocol-relative address is refused', MegVentureAdsWidgetV2::safeUrl('//attacker.test/x') === '');
+check('a bare word is refused', MegVentureAdsWidgetV2::safeUrl('megventure.com') === '');
+check('empty is empty', MegVentureAdsWidgetV2::safeUrl('') === '');
+check('null is empty', MegVentureAdsWidgetV2::safeUrl(null) === '');
+check('whitespace only is empty', MegVentureAdsWidgetV2::safeUrl('   ') === '');
 
 /* ------------------------------------------------- what we will fetch ----- */
 
 echo 'isAllowedWidgetUrl - the address the shop fetches' . PHP_EOL;
 
-check('the widget host is allowed', MegVentureAdsWidget::isAllowedWidgetUrl('https://megventure.com/index.php?fc=module') === true);
-check('www of the widget host is allowed', MegVentureAdsWidget::isAllowedWidgetUrl('https://www.megventure.com/x') === true);
-check('the host match is case-insensitive', MegVentureAdsWidget::isAllowedWidgetUrl('https://MegVenture.com/x') === true);
+check('the widget host is allowed', MegVentureAdsWidgetV2::isAllowedWidgetUrl('https://megventure.com/index.php?fc=module') === true);
+check('www of the widget host is allowed', MegVentureAdsWidgetV2::isAllowedWidgetUrl('https://www.megventure.com/x') === true);
+check('the host match is case-insensitive', MegVentureAdsWidgetV2::isAllowedWidgetUrl('https://MegVenture.com/x') === true);
 
-check('another host is refused', MegVentureAdsWidget::isAllowedWidgetUrl('https://attacker.test/x') === false);
-check('a lookalike subdomain is refused', MegVentureAdsWidget::isAllowedWidgetUrl('https://megventure.com.attacker.test/x') === false);
-check('the shop loopback is refused', MegVentureAdsWidget::isAllowedWidgetUrl('http://127.0.0.1/admin') === false);
-check('cloud metadata is refused', MegVentureAdsWidget::isAllowedWidgetUrl('http://169.254.169.254/latest/meta-data/') === false);
-check('file: is refused', MegVentureAdsWidget::isAllowedWidgetUrl('file:///etc/passwd') === false);
-check('a schemeless address is refused', MegVentureAdsWidget::isAllowedWidgetUrl('megventure.com') === false);
-check('empty is refused', MegVentureAdsWidget::isAllowedWidgetUrl('') === false);
+check('another host is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('https://attacker.test/x') === false);
+check('a lookalike subdomain is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('https://megventure.com.attacker.test/x') === false);
+check('the shop loopback is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('http://127.0.0.1/admin') === false);
+check('cloud metadata is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('http://169.254.169.254/latest/meta-data/') === false);
+check('file: is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('file:///etc/passwd') === false);
+check('a schemeless address is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('megventure.com') === false);
+check('empty is refused', MegVentureAdsWidgetV2::isAllowedWidgetUrl('') === false);
 
 /* ------------------------------------------------------------------------- */
 

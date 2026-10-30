@@ -1025,7 +1025,7 @@ class MegFaq extends Module implements WidgetInterface
 
         $mfContent = $this->display(__FILE__, 'views/templates/admin/configure.tpl');
 
-        return $nudge . $mfContent . MegVentureAdsWidget::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
+        return $nudge . $mfContent . MegVentureAdsWidgetV2::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
     }
 
     /**
