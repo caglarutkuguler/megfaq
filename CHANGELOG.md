@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.3
+
+### Added
+
+- The configuration page links to the free MEG Venture Updates module, which installs updates for this module in one click. The line is hidden once that module is installed.
+
 ## 1.2.2
 
 ### Security

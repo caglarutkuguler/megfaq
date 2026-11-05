@@ -21,7 +21,7 @@ $main = file_get_contents($root . '/megfaq.php');
 $ask = file_get_contents($root . '/controllers/front/askquestion.php');
 $ads = file_get_contents($root . '/classes/MegVentureAdsWidget.php');
 
-ok(strpos($main, "version = '1.2.2'") !== false, 'module version 1.2.2');
+ok(strpos($main, "version = '1.2.3'") !== false, 'module version 1.2.3');
 ok(strpos($main, 'REQUEST_METHOD') !== false && strpos($main, "=== 'POST'") !== false,
     'configure checks POST');
 ok(preg_match('/!\$isPost \|\| !\$submitted/', $main) === 1, 'writes gated by $isPost');
