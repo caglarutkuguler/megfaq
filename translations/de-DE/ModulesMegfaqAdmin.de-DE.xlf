@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="ModulesMegfaqAdmin.xlf" source-language="en-US" target-language="de-DE" datatype="plaintext">
+    <body>
+      <trans-unit id="05f82dce1e6153038edd57a9aa206a26">
+        <source>megfaq could not be installed: %reason%</source>
+        <target>megfaq konnte nicht installiert werden: %reason%</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
