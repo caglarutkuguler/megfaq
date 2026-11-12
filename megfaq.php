@@ -131,7 +131,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $this->name = 'megfaq';
         $this->tab = 'front_office_features';
-        $this->version = '1.2.3';
+        $this->version = '1.3.0';
         $this->author = 'MEG Venture';
         $this->need_instance = 0;
         $this->bootstrap = true;
@@ -343,6 +343,71 @@ class MegFaq extends Module implements WidgetInterface
     private function getShopId()
     {
         return (int) $this->context->shop->id;
+    }
+
+    /**
+     * The shops the back office is looking at: the one shop, or every shop of
+     * the selected group or of "All shops". Always at least the context shop,
+     * so with one shop the queries are exactly what they were.
+     *
+     * @return int[]
+     */
+    private function contextShopIds()
+    {
+        if (!Shop::isFeatureActive()) {
+            return [$this->getShopId()];
+        }
+
+        $ids = MegFaqEntry::cleanShopIds(Shop::getContextListShopID());
+
+        return $ids ? $ids : [$this->getShopId()];
+    }
+
+    /**
+     * Shops an employee can put an entry in, for the form's checkbox list, with
+     * the ones in $checked ticked. Empty when multistore is off.
+     *
+     * @param int[] $checked
+     *
+     * @return array<int, array{id: int, name: string, checked: bool}>
+     */
+    private function shopChoices(array $checked)
+    {
+        if (!Shop::isFeatureActive()) {
+            return [];
+        }
+
+        $employee = isset($this->context->employee) ? $this->context->employee : null;
+        $out = [];
+        foreach (Shop::getShops(true) as $shop) {
+            $idShop = (int) $shop['id_shop'];
+            if ($employee && method_exists($employee, 'hasAuthOnShop') && !$employee->hasAuthOnShop($idShop)) {
+                continue;
+            }
+            $out[] = [
+                'id' => $idShop,
+                'name' => (string) $shop['name'],
+                'checked' => in_array($idShop, $checked, true),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Warning shown on the configuration page outside a single-shop context.
+     *
+     * @return string
+     */
+    private function renderShopContextNotice()
+    {
+        if (!Shop::isFeatureActive() || Shop::getContext() == Shop::CONTEXT_SHOP) {
+            return '';
+        }
+
+        return '<div class="alert alert-warning">'
+            . $this->l('You are working in All shops or a shop group. Settings saved here become the default for every shop that has no value of its own. The list shows the entries of the shops in this selection, and one entry can belong to several shops. Deleting an entry here removes it from every shop in this selection; choose a single shop to remove it from that shop only.')
+            . '</div>';
     }
 
     /**
@@ -998,7 +1063,9 @@ class MegFaq extends Module implements WidgetInterface
 
         $settings = $this->getSettings();
         $idLang = $this->getLangId();
-        $idShop = $this->getShopId();
+        // One id, or the list of shops of the selected context: the list, its
+        // count and the badges all read the entries of every shop in it.
+        $idShop = $this->contextShopIds();
 
         $tab = Tools::getValue('mf_tab', 'list');
         if (!in_array($tab, ['list', 'settings', 'help'], true)) {
@@ -1018,6 +1085,9 @@ class MegFaq extends Module implements WidgetInterface
 
         $rows = MegFaqEntry::search($filters, $idLang, $perPage, ($page - 1) * $perPage, $idShop);
 
+        $edit = $this->editing();
+        $shopChoices = $this->shopChoices($edit ? $edit['shop_ids'] : $idShop);
+
         $this->smarty->assign([
             'mf_tab' => $tab,
             'mf_module_name' => $this->displayName,
@@ -1032,7 +1102,9 @@ class MegFaq extends Module implements WidgetInterface
             'mf_published' => MegFaqEntry::countSearch(['status' => 'published'], $idLang, $idShop),
             'mf_globals' => MegFaqEntry::countSearch(['scope' => 'global'], $idLang, $idShop),
             'mf_languages' => $this->languageChoices(),
-            'mf_edit' => $this->editing(),
+            'mf_edit' => $edit,
+            'mf_multistore' => Shop::isFeatureActive(),
+            'mf_shop_choices' => $shopChoices,
             'mf_form_url' => $this->configUrl(),
             'mf_page_url' => $this->frontUrl('faq'),
             'mf_page_urls' => $this->faqPageUrls(),
@@ -1048,7 +1120,7 @@ class MegFaq extends Module implements WidgetInterface
 
         $mfContent = $this->display(__FILE__, 'views/templates/admin/configure.tpl');
 
-        return $nudge . $mfContent . $this->renderMvuNotice() . MegVentureAdsWidgetV2::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
+        return $nudge . $this->renderShopContextNotice() . $mfContent . $this->renderMvuNotice() . MegVentureAdsWidgetV2::render('https://megventure.com/index.php?fc=module&module=virtualproductcombination&controller=adswidget');
     }
 
     /**
@@ -1211,7 +1283,7 @@ class MegFaq extends Module implements WidgetInterface
 
         if ($isNew) {
             $entry = new MegFaqEntry();
-        } elseif (!MegFaqEntry::belongsToShop($id, $this->getShopId())) {
+        } elseif (!MegFaqEntry::belongsToShop($id, $this->contextShopIds())) {
             $this->html .= $this->displayError($this->l('That entry does not belong to this shop.'));
 
             return;
@@ -1259,6 +1331,33 @@ class MegFaq extends Module implements WidgetInterface
             );
         }
 
+        // Shops. With several shops a new entry belongs to the ticked shops
+        // (the shops of the context when the form did not carry the list), and
+        // an edit rewrites the association only when the selection changed.
+        if (Shop::isFeatureActive()) {
+            $current = $isNew ? [] : MegFaqEntry::getShopIdsFor([(int) $entry->id]);
+            $current = isset($current[(int) $entry->id]) ? $current[(int) $entry->id] : [];
+
+            if (Tools::getValue('mf_shops_sent')) {
+                $visible = [];
+                foreach ($this->shopChoices([]) as $choice) {
+                    $visible[] = $choice['id'];
+                }
+                $wanted = MegFaqEntry::mergeShopList(Tools::getValue('mf_shops'), $visible, $current);
+                if (!$wanted) {
+                    $this->html .= $this->displayError($this->l('Choose at least one shop.'));
+
+                    return;
+                }
+            } else {
+                $wanted = $isNew ? $this->contextShopIds() : $current;
+            }
+
+            if ($isNew || $wanted !== $current) {
+                $entry->id_shop_list = $wanted;
+            }
+        }
+
         $saved = $isNew ? $entry->add() : $entry->update();
 
         if (!$saved) {
@@ -1302,11 +1401,32 @@ class MegFaq extends Module implements WidgetInterface
     private function deleteEntry($id)
     {
         $entry = new MegFaqEntry($id);
+        $shopIds = $this->contextShopIds();
 
-        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->getShopId())) {
+        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $shopIds)) {
             $this->html .= $this->displayError($this->l('That entry could not be deleted.'));
 
             return;
+        }
+
+        // An entry that also belongs to shops outside this context is only
+        // taken out of the shops of this context; it is deleted outright when
+        // nothing else holds it (always, in "All shops" and with one shop).
+        if (Shop::isFeatureActive()) {
+            $held = MegFaqEntry::getShopIdsFor([(int) $id]);
+            $held = isset($held[(int) $id]) ? $held[(int) $id] : [];
+
+            if (MegFaqEntry::remainingShops($held, $shopIds)) {
+                if (!$entry->detachFromShops($shopIds)) {
+                    $this->html .= $this->displayError($this->l('That entry could not be deleted.'));
+
+                    return;
+                }
+
+                $this->html .= $this->displayConfirmation($this->l('Entry removed from the shops in this selection. It is still shown in its other shops.'));
+
+                return;
+            }
         }
 
         if (!$entry->delete()) {
@@ -1327,7 +1447,7 @@ class MegFaq extends Module implements WidgetInterface
     {
         $entry = new MegFaqEntry($id);
 
-        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->getShopId())) {
+        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->contextShopIds())) {
             return;
         }
 
@@ -1374,9 +1494,11 @@ class MegFaq extends Module implements WidgetInterface
 
         $entry = new MegFaqEntry($id);
 
-        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->getShopId())) {
+        if (!Validate::isLoadedObject($entry) || !MegFaqEntry::belongsToShop($id, $this->contextShopIds())) {
             return null;
         }
+
+        $held = MegFaqEntry::getShopIdsFor([(int) $entry->id]);
 
         $text = [];
         foreach (Language::getLanguages(false) as $language) {
@@ -1398,6 +1520,7 @@ class MegFaq extends Module implements WidgetInterface
             'position' => (int) $entry->position,
             'active' => (bool) $entry->active,
             'customer_name' => $entry->customer_name,
+            'shop_ids' => isset($held[(int) $entry->id]) ? $held[(int) $entry->id] : [],
             'text' => $text,
         ];
     }
@@ -1490,15 +1613,32 @@ class MegFaq extends Module implements WidgetInterface
      */
     private function productChoices()
     {
-        $rows = Db::getInstance()->executeS(
-            'SELECT pl.`id_product`, pl.`name`, p.`reference`'
-            . ' FROM `' . _DB_PREFIX_ . 'product_lang` pl'
-            . ' INNER JOIN `' . _DB_PREFIX_ . 'product` p ON p.`id_product` = pl.`id_product`'
-            . ' WHERE pl.`id_lang` = ' . $this->getLangId()
-            . ' AND pl.`id_shop` = ' . $this->getShopId()
-            . ' ORDER BY pl.`name` ASC'
-            . ' LIMIT ' . (self::PRODUCT_PICKER_MAX + 1)
-        );
+        $shopIds = $this->contextShopIds();
+
+        if (count($shopIds) > 1) {
+            // Several shops: one row per product, named from whichever of the
+            // shops has it.
+            $rows = Db::getInstance()->executeS(
+                'SELECT pl.`id_product`, MIN(pl.`name`) AS `name`, MIN(p.`reference`) AS `reference`'
+                . ' FROM `' . _DB_PREFIX_ . 'product_lang` pl'
+                . ' INNER JOIN `' . _DB_PREFIX_ . 'product` p ON p.`id_product` = pl.`id_product`'
+                . ' WHERE pl.`id_lang` = ' . $this->getLangId()
+                . ' AND pl.`id_shop` IN (' . implode(',', $shopIds) . ')'
+                . ' GROUP BY pl.`id_product`'
+                . ' ORDER BY MIN(pl.`name`) ASC'
+                . ' LIMIT ' . (self::PRODUCT_PICKER_MAX + 1)
+            );
+        } else {
+            $rows = Db::getInstance()->executeS(
+                'SELECT pl.`id_product`, pl.`name`, p.`reference`'
+                . ' FROM `' . _DB_PREFIX_ . 'product_lang` pl'
+                . ' INNER JOIN `' . _DB_PREFIX_ . 'product` p ON p.`id_product` = pl.`id_product`'
+                . ' WHERE pl.`id_lang` = ' . $this->getLangId()
+                . ' AND pl.`id_shop` = ' . $this->getShopId()
+                . ' ORDER BY pl.`name` ASC'
+                . ' LIMIT ' . (self::PRODUCT_PICKER_MAX + 1)
+            );
+        }
 
         $rows = is_array($rows) ? $rows : [];
 
@@ -1545,11 +1685,35 @@ class MegFaq extends Module implements WidgetInterface
         $names = $this->productNames($rows);
         $out = [];
 
+        $shopNames = [];
+        $held = [];
+        $ctx = $this->contextShopIds();
+        if (Shop::isFeatureActive() && $rows) {
+            foreach (Shop::getShops(false) as $shop) {
+                $shopNames[(int) $shop['id_shop']] = (string) $shop['name'];
+            }
+            $ids = [];
+            foreach ($rows as $row) {
+                $ids[] = (int) $row['id_megfaq'];
+            }
+            $held = MegFaqEntry::getShopIdsFor($ids);
+        }
+
         foreach ($rows as $row) {
             $idProduct = (int) $row['id_product'];
             $answer = (string) $row['answer'];
 
+            $entryShops = isset($held[(int) $row['id_megfaq']]) ? $held[(int) $row['id_megfaq']] : [];
+            $labels = [];
+            foreach ($entryShops as $idShopOfEntry) {
+                $labels[] = isset($shopNames[$idShopOfEntry]) ? $shopNames[$idShopOfEntry] : '#' . $idShopOfEntry;
+            }
+
             $out[] = [
+                'shop_names' => implode(', ', $labels),
+                // True when deleting here only detaches the entry from this
+                // context, because other shops still hold it.
+                'detaches' => Shop::isFeatureActive() && (bool) MegFaqEntry::remainingShops($entryShops, $ctx),
                 'id' => (int) $row['id_megfaq'],
                 'id_product' => $idProduct,
                 'product' => $idProduct
@@ -1588,10 +1752,13 @@ class MegFaq extends Module implements WidgetInterface
             return [];
         }
 
+        $shopIds = $this->contextShopIds();
         $found = Db::getInstance()->executeS(
             'SELECT `id_product`, `name` FROM `' . _DB_PREFIX_ . 'product_lang`'
             . ' WHERE `id_lang` = ' . $this->getLangId()
-            . ' AND `id_shop` = ' . $this->getShopId()
+            . (count($shopIds) > 1
+                ? ' AND `id_shop` IN (' . implode(',', $shopIds) . ')'
+                : ' AND `id_shop` = ' . $this->getShopId())
             . ' AND `id_product` IN (' . implode(',', $ids) . ')'
         );
 

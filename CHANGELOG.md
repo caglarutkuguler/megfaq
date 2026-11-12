@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.3.0
+
+### Added
+
+- **An entry can belong to several shops.** With more than one shop, the entry
+  form has a *Shops* checkbox list (the shops you may manage), so a shared
+  answer is typed once instead of once per shop. A new entry starts with the
+  shops of the current context ticked; an edit leaves the shops alone unless
+  you change the ticks. The entry list has a new *Shops* column.
+- **In All shops or a shop group the list shows, and you can edit, the entries
+  of every shop in that selection.** A warning on the configuration page
+  explains that settings saved there become the default for every shop without
+  its own value.
+- **Deleting an entry no longer removes it from shops outside your selection.**
+  In a single-shop context an entry that also belongs to other shops is only
+  taken out of this shop; it is deleted for good when no other shop holds it,
+  and in All shops. The confirmation tells you which will happen.
+- With one shop none of this appears.
+
+### Fixed
+
+- **Entries with no shop association were invisible.** Every storefront query
+  joins the shop association, so an entry saved without a row there never
+  appeared. The upgrade gives each such entry a row for the default shop. If
+  some of those entries are published, they will now show on the storefront.
+- On a multistore, the form could never put one entry in more than one shop:
+  the shop list was read but nothing set it.
+
 ## 1.2.3
 
 ### Added

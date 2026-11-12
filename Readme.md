@@ -1,6 +1,6 @@
 # Product FAQ and Customer Questions
 
-**Version:** 1.2.3
+**Version:** 1.3.0
 
 Answer the questions that stop people buying, on the page where they stop. Write an answer once and show it on every product, or attach it to a single product. Shoppers can ask their own question from the product page; it lands in a moderation queue, and publishing your answer turns it into a FAQ entry.
 
@@ -44,6 +44,17 @@ The configure page is organised top to bottom:
 
 Above 800 products the "shown on" product picker becomes a plain ID field. A select carrying every product in a large catalogue is a page that takes seconds to render and megabytes to send.
 
+## Multistore
+
+With several shops, an entry can belong to one shop or to several, and a shared answer only has to be typed once.
+
+- **Choosing the shops.** The entry form lists the shops you may manage as checkboxes. A new entry starts with the shops of the current back office context ticked. An existing entry keeps its shops unless you change the ticks, and a shop it belongs to that you cannot manage is left as it is.
+- **The list.** In *All shops* or a shop group the list, its counters and the Questions badge cover every shop in the selection, a **Shops** column shows where each entry appears, and you can edit those entries. A warning on the configuration page says that settings saved in that context become the default for every shop without its own value.
+- **Deleting.** In a single-shop context, an entry that also belongs to other shops is only taken out of that shop. It is deleted for good when no other shop holds it, and when you delete it in *All shops*. The confirmation says which will happen.
+- **Upgrading.** Version 1.3.0 gives every entry that has no shop association a row for the default shop. Without one the storefront never showed that entry.
+
+With one shop none of this appears.
+
 ## Data
 
 Three tables: `megfaq` (the entry and its scope), `megfaq_lang` (question and answer per language), `megfaq_shop` (which shops it belongs to). Uninstalling the module removes all three.
@@ -54,11 +65,12 @@ The two GDPR hooks are registered as optional. PrestaShop creates those hooks on
 
 ## Tests
 
-`tests/ValidatorTest.php` and `tests/QueryTest.php` run against plain PHP — no PrestaShop bootstrap, no database:
+`tests/ValidatorTest.php`, `tests/QueryTest.php` and `tests/MultistoreTest.php` run against plain PHP — no PrestaShop bootstrap, no database:
 
 ```
 php tests/ValidatorTest.php
 php tests/QueryTest.php
+php tests/MultistoreTest.php
 ```
 
 ## Licence

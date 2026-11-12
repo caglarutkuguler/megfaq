@@ -152,6 +152,22 @@ h3 .material-icons.mv-ico,
                         </div>
                     </div>
 
+                    {if $mf_multistore && $mf_shop_choices}
+                        <div class="form-group">
+                            <label class="control-label">{l s='Shops' mod='megfaq'}</label>
+                            <input type="hidden" name="mf_shops_sent" value="1">
+                            <div>
+                                {foreach from=$mf_shop_choices item=shop}
+                                    <label class="mf-shop-check">
+                                        <input type="checkbox" name="mf_shops[]" value="{$shop.id|intval}"{if $shop.checked} checked{/if}>
+                                        {$shop.name|escape:'html':'UTF-8'}
+                                    </label>
+                                {/foreach}
+                            </div>
+                            <p class="help-block">{l s='The entry is shown in every ticked shop.' mod='megfaq'}</p>
+                        </div>
+                    {/if}
+
                     <ul class="nav nav-pills mf-lang-tabs">
                         {foreach from=$mf_languages item=language name=langs}
                             <li{if $smarty.foreach.langs.first} class="active"{/if}>
@@ -245,6 +261,7 @@ h3 .material-icons.mv-ico,
                             <tr>
                                 <th>{l s='Question' mod='megfaq'}</th>
                                 <th>{l s='Shown on' mod='megfaq'}</th>
+                                {if $mf_multistore}<th>{l s='Shops' mod='megfaq'}</th>{/if}
                                 <th>{l s='Status' mod='megfaq'}</th>
                                 <th>{l s='Added' mod='megfaq'}</th>
                                 <th class="mf-list__actions">{l s='Actions' mod='megfaq'}</th>
@@ -271,6 +288,7 @@ h3 .material-icons.mv-ico,
                                             {$row.product|escape:'html':'UTF-8'}
                                         {/if}
                                     </td>
+                                    {if $mf_multistore}<td>{$row.shop_names|escape:'html':'UTF-8'}</td>{/if}
                                     <td>
                                         {if $row.active}
                                             <span class="mf-status mf-status--on">{l s='Published' mod='megfaq'}</span>
@@ -294,7 +312,7 @@ h3 .material-icons.mv-ico,
                                             <input type="hidden" name="mf_tab" value="list">
                                             <input type="hidden" name="mf_id" value="{$row.id|intval}">
                                             <button type="submit" name="submitMegFaqDelete" class="btn btn-default btn-sm mf-danger"
-                                                    data-mf-confirm="{l s='Delete this entry for good?' mod='megfaq'}">
+                                                    data-mf-confirm="{if $mf_multistore && $row.detaches}{l s='Remove this entry from the shops in this selection? It stays in the other shops it belongs to.' mod='megfaq'}{else}{l s='Delete this entry for good?' mod='megfaq'}{/if}">
                                                 <i class="material-icons mv-ico">delete</i>
                                             </button>
                                         </form>

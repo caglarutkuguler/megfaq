@@ -353,37 +353,180 @@ class MegFaqEntry extends ObjectModel
     }
 
     /**
-     * @param int $idShop
+     * Join the shop association: one shop id, or the list of shops a back
+     * office context covers.
+     *
+     * One shop keeps the query it always was. Several shops join a de-duplicated
+     * set of entry ids, so an entry that belongs to two of them is listed and
+     * counted once.
+     *
+     * @param int|int[] $idShop
      *
      * @return string
      */
     private static function shopJoin($idShop)
     {
+        $ids = is_array($idShop) ? self::cleanShopIds($idShop) : [(int) $idShop];
+
+        if (count($ids) > 1) {
+            return ' INNER JOIN (SELECT DISTINCT `id_megfaq` FROM `' . _DB_PREFIX_ . 'megfaq_shop`'
+                . ' WHERE `id_shop` IN (' . implode(',', $ids) . ')) fs'
+                . ' ON fs.`id_megfaq` = f.`id_megfaq`';
+        }
+
         return ' INNER JOIN `' . _DB_PREFIX_ . 'megfaq_shop` fs'
-            . ' ON fs.`id_megfaq` = f.`id_megfaq` AND fs.`id_shop` = ' . (int) $idShop;
+            . ' ON fs.`id_megfaq` = f.`id_megfaq` AND fs.`id_shop` = ' . ($ids ? (int) $ids[0] : 0);
     }
 
     /**
-     * Whether this entry is associated with the given shop.
+     * Positive, unique, sorted integers.
      *
-     * @param int $idMegfaq
-     * @param int $idShop
+     * @param mixed $ids
+     *
+     * @return int[]
+     */
+    public static function cleanShopIds($ids)
+    {
+        $out = [];
+        foreach ((array) $ids as $id) {
+            $id = (int) $id;
+            if ($id > 0) {
+                $out[$id] = $id;
+            }
+        }
+        sort($out);
+
+        return array_values($out);
+    }
+
+    /**
+     * The shop list to save from the entry form.
+     *
+     * The form can only offer the shops the employee may manage ($visible). A
+     * shop the entry already belongs to that the form did not offer is kept, so
+     * editing from one shop never detaches another shop's copy. Posted ids
+     * outside $visible are ignored.
+     *
+     * @param mixed $posted  mf_shops[] as posted
+     * @param int[] $visible shops the form offered
+     * @param int[] $current shops the entry belongs to now
+     *
+     * @return int[] empty when nothing would be left
+     */
+    public static function mergeShopList($posted, array $visible, array $current)
+    {
+        $visible = self::cleanShopIds($visible);
+        $picked = array_values(array_intersect(self::cleanShopIds($posted), $visible));
+        $kept = array_values(array_diff(self::cleanShopIds($current), $visible));
+
+        return self::cleanShopIds(array_merge($picked, $kept));
+    }
+
+    /**
+     * The shops an entry would still belong to after leaving the given ones.
+     * Empty means the entry would belong to no shop at all - delete it.
+     *
+     * @param int[] $entryShops
+     * @param int[] $leaving
+     *
+     * @return int[]
+     */
+    public static function remainingShops(array $entryShops, array $leaving)
+    {
+        return array_values(array_diff(self::cleanShopIds($entryShops), self::cleanShopIds($leaving)));
+    }
+
+    /**
+     * The shops each entry belongs to.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int, int[]> id_megfaq => shop ids (empty for none)
+     */
+    public static function getShopIdsFor(array $ids)
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        if (!$ids) {
+            return [];
+        }
+
+        $rows = Db::getInstance()->executeS(
+            'SELECT `id_megfaq`, `id_shop` FROM `' . _DB_PREFIX_ . 'megfaq_shop`'
+            . ' WHERE `id_megfaq` IN (' . implode(',', $ids) . ')'
+        );
+
+        return self::groupShopRows(is_array($rows) ? $rows : [], $ids);
+    }
+
+    /**
+     * Pure part of getShopIdsFor().
+     *
+     * @param array $rows rows with id_megfaq and id_shop
+     * @param int[] $ids  every id that was asked about
+     *
+     * @return array<int, int[]>
+     */
+    public static function groupShopRows(array $rows, array $ids)
+    {
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['id_megfaq']][] = (int) $row['id_shop'];
+        }
+
+        $out = [];
+        foreach ($ids as $id) {
+            $id = (int) $id;
+            $out[$id] = isset($map[$id]) ? self::cleanShopIds($map[$id]) : [];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Take this entry out of the given shops without deleting it.
+     *
+     * @param int[] $idShops
+     *
+     * @return bool
+     */
+    public function detachFromShops(array $idShops)
+    {
+        $idShops = self::cleanShopIds($idShops);
+        if (!(int) $this->id || !$idShops) {
+            return false;
+        }
+
+        return (bool) Db::getInstance()->execute(
+            'DELETE FROM `' . _DB_PREFIX_ . 'megfaq_shop`'
+            . ' WHERE `id_megfaq` = ' . (int) $this->id
+            . ' AND `id_shop` IN (' . implode(',', $idShops) . ')'
+        );
+    }
+
+    /**
+     * Whether this entry is associated with the given shop, or with at least
+     * one of the given shops.
+     *
+     * @param int       $idMegfaq
+     * @param int|int[] $idShop
      *
      * @return bool
      */
     public static function belongsToShop($idMegfaq, $idShop)
     {
         $idMegfaq = (int) $idMegfaq;
-        $idShop = (int) $idShop;
+        $shops = is_array($idShop) ? self::cleanShopIds($idShop) : self::cleanShopIds([$idShop]);
 
-        if (!$idMegfaq || !$idShop) {
+        if (!$idMegfaq || !$shops) {
             return false;
         }
 
         return (bool) Db::getInstance()->getValue(
             'SELECT 1 FROM `' . _DB_PREFIX_ . 'megfaq_shop`'
             . ' WHERE `id_megfaq` = ' . $idMegfaq
-            . ' AND `id_shop` = ' . $idShop
+            . (count($shops) === 1
+                ? ' AND `id_shop` = ' . $shops[0]
+                : ' AND `id_shop` IN (' . implode(',', $shops) . ')')
         );
     }
 

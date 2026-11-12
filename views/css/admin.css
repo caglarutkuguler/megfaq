@@ -227,3 +227,9 @@
     margin-bottom: 4px;
     font-weight: 600;
 }
+
+.mf-admin .mf-shop-check {
+    display: inline-block;
+    margin-right: 16px;
+    font-weight: normal;
+}

@@ -285,3 +285,9 @@ $_MODULE['<{megfaq}prestashop>megventurereviewnudge_8ad4303b83a62fb6ca3b025bad5b
 $_MODULE['<{megfaq}prestashop>megventurereviewnudge_4d170dcb0d03a0efa011c9193219bb68'] = 'Okay, we will not ask again.';
 $_MODULE['<{megfaq}prestashop>megfaq_2831420e2c343c00fc80bb8b4634e559'] = 'Get updates for this module in one click: install the free MEG Venture Updates module.';
 $_MODULE['<{megfaq}prestashop>megfaq_9ffdb95250e26c7a6b468126ac7c75b0'] = 'How it works';
+$_MODULE['<{megfaq}prestashop>megfaq_82430ab1c46202bd80226e25e39732df'] = 'You are working in All shops or a shop group. Settings saved here become the default for every shop that has no value of its own. The list shows the entries of the shops in this selection, and one entry can belong to several shops. Deleting an entry here removes it from every shop in this selection; choose a single shop to remove it from that shop only.';
+$_MODULE['<{megfaq}prestashop>megfaq_14fe10f37cfdd7ffb00a2fb4a1f2086c'] = 'Choose at least one shop.';
+$_MODULE['<{megfaq}prestashop>megfaq_c877d452adfbfa6bff265b2a2b7e7f46'] = 'Entry removed from the shops in this selection. It is still shown in its other shops.';
+$_MODULE['<{megfaq}prestashop>configure_12a521af593422cd508f7707662c9eb2'] = 'Shops';
+$_MODULE['<{megfaq}prestashop>configure_a3948f4602c789c1560a79b65d6c192e'] = 'The entry is shown in every ticked shop.';
+$_MODULE['<{megfaq}prestashop>configure_728f3a0ecfc8a6941545791076d8c595'] = 'Remove this entry from the shops in this selection? It stays in the other shops it belongs to.';
